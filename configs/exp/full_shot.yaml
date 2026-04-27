@@ -1,0 +1,13 @@
+batch_size: 8
+device_id: 0
+num_workers: 4
+prefetch_factor: 8
+max_epochs: 50
+lr: 0.0005
+weight_decay: 0.0001
+milestones: [ 10, 20, 30, 40 ]
+gamma: 0.5
+clip_grad_value: 5
+accumulation_steps: 1
+save_freq: 10
+model_param_filename: "model_parameters.pt"

@@ -1,0 +1,10 @@
+_target_: 'src.models.staeformer.STAEformer'
+input_embedding_dim: 32
+temporal_embedding_dim: 32
+spatial_embedding_dim: 32
+adaptive_embedding_dim: 32
+feed_forward_dim: 128
+num_heads: 4
+num_layers: 2
+use_mixed_proj: true
+dropout: 0.3

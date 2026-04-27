@@ -1,0 +1,14 @@
+hydra:
+  sweep:
+    dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.override_dirname}
+
+defaults:
+  - _self_
+  - dataset: pems04
+  - model: fedformer
+  - task: long
+  - exp: full_shot
+
+meta_path: "/public/home/202411094934/python_project/Spatio-Temporal-Library/data/STFM-datasets/"
+seed: 2026
