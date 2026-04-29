@@ -49,7 +49,7 @@ class BaseEngine:
                 json.dump(log_metadata, f, indent=2)
             self.logger.info(f"Created new log file at {self.log_file}")
 
-    def _log_epoch_info(self, epoch: int, epoch_log: Dict):
+    def _log_epoch_info(self, epoch: Union[int, str], epoch_log: Dict):
         """
         Log epoch information to JSON file.
 
