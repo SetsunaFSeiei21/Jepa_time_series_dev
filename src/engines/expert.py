@@ -413,3 +413,10 @@ class ExpertEngine(BaseEngine):
         self.logger.info(
             f"Test memory allocated: {test_memory_allocated / (1024 ** 2):.2f} MB"
         )
+        test_log = {
+            "metrics": test_metrics,
+            "time_seconds": float(test_time),
+            "memory_reserved_mb": float(test_memory_reserved / (1024**2)),
+            "memory_allocated_mb": float(test_memory_allocated / (1024**2)),
+        }
+        self._log_epoch_info(epoch="test", epoch_log=test_log)
