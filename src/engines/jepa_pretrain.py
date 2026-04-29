@@ -160,7 +160,7 @@ class JEPAPretrainEngine(BaseEngine):
     def run(self):
         self.logger.info("Starting JEPA pretraining...")
 
-        for epoch in range(self.max_epochs):
+        for epoch in range(1, self.max_epochs + 1):
             start = time()
             terminate, train_loss = self.train_epoch()
             train_time = time() - start
@@ -173,8 +173,8 @@ class JEPAPretrainEngine(BaseEngine):
             if terminate:
                 break
 
-            if (epoch + 1) % self.save_freq == 0:
-                self.save_checkpoint(epoch + 1)
+            if (epoch) % self.save_freq == 0:
+                self.save_checkpoint(epoch)
 
             train_memory_reserved = torch.cuda.memory_reserved()
             train_memory_allocated = torch.cuda.memory_allocated()
@@ -198,7 +198,7 @@ class JEPAPretrainEngine(BaseEngine):
                 "memory_reserved_mb": float(train_memory_reserved / (1024**2)),
                 "memory_allocated_mb": float(train_memory_allocated / (1024**2)),
             }
-            self._log_epoch_info(epoch=f"Pretrain {epoch+1}", epoch_log=pretrain_log)
+            self._log_epoch_info(epoch=f"Pretrain {epoch}", epoch_log=pretrain_log)
 
             self.scheduler.step()
 
