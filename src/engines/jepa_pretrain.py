@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime
 from time import time
 from typing import Dict, Any, Tuple
 from logging import Logger
@@ -162,7 +163,7 @@ class JEPAPretrainEngine(BaseEngine):
         for epoch in range(self.max_epochs):
             start = time()
             terminate, train_loss = self.train_epoch()
-            cost = time() - start
+            train_time = time() - start
 
             self.logger.info(
                 f"[JEPA Pretrain] Epoch {epoch + 1}/{self.max_epochs}, "
@@ -174,6 +175,30 @@ class JEPAPretrainEngine(BaseEngine):
 
             if (epoch + 1) % self.save_freq == 0:
                 self.save_checkpoint(epoch + 1)
+
+            train_memory_reserved = torch.cuda.memory_reserved()
+            train_memory_allocated = torch.cuda.memory_allocated()
+            current_lr = self.optimizer.param_groups[0]["lr"]
+
+            self.logger.info(f"Pretrain loss: {train_loss}")
+            self.logger.info(f"Pretrain time: {train_time}s")
+            self.logger.info(
+                f"Pretrain memory reserved: {train_memory_reserved / (1024 ** 2):.2f} MB"
+            )
+            self.logger.info(
+                f"Pretrain memory allocated: {train_memory_allocated / (1024 ** 2):.2f} MB"
+            )
+            self.logger.info(f"Current learning rate: {current_lr}")
+
+            pretrain_log = {
+                "timestamp": datetime.now().isoformat(),
+                "current_learning_rate": current_lr,
+                "loss": train_loss,
+                "time_seconds": float(train_time),
+                "memory_reserved_mb": float(train_memory_reserved / (1024**2)),
+                "memory_allocated_mb": float(train_memory_allocated / (1024**2)),
+            }
+            self._log_epoch_info(epoch=f"Pretrain {epoch+1}", epoch_log=pretrain_log)
 
             self.scheduler.step()
 
