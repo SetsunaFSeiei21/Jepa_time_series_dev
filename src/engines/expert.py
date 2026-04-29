@@ -306,8 +306,8 @@ class ExpertEngine(BaseEngine):
         TERMINATE = False
         self.logger.info("Starting training...")
 
-        for epoch in range(self.max_epochs):
-            self.logger.info(f"Epoch {epoch + 1}/{self.max_epochs}")
+        for epoch in range(1, self.max_epochs + 1):
+            self.logger.info(f"Epoch {epoch}/{self.max_epochs}")
 
             # Training
             train_start = time()
@@ -374,7 +374,7 @@ class ExpertEngine(BaseEngine):
                 self.logger.info(f"New best model! Val loss: {criteria:.6f}")
 
             # Save checkpoint
-            if (epoch + 1) % self.save_freq == 0 or is_best:
+            if (epoch) % self.save_freq == 0 or is_best:
                 self.save_checkpoint(epoch, is_best)
 
             test_start = time()
