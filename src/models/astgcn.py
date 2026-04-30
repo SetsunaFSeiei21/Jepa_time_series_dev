@@ -243,7 +243,7 @@ class ASTGCN(BaseModel):
         time_stride,
         **args,
     ):
-        super(ASTGCN_JEPA, self).__init__(**args)
+        super(ASTGCN, self).__init__(**args)
 
         self.order = order
         self.nb_block = nb_block
