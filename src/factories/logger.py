@@ -26,6 +26,8 @@ class LoggerFactory:
     MODE_CONFIGS = {
         "train": LoggerConfig(name="training_logger", log_file="training.log"),
         "inference": LoggerConfig(name="inference_logger", log_file="inference.log"),
+        "pretrain": LoggerConfig(name="pretrain_logger", log_file="pretrain.log"),
+        "finetune": LoggerConfig(name="finetune_logger", log_file="finetune.log"),
     }
 
     # Handler creators mapping

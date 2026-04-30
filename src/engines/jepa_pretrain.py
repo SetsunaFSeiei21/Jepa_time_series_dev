@@ -158,6 +158,21 @@ class JEPAPretrainEngine(BaseEngine):
         torch.save(checkpoint, path)
 
     def run(self):
+        log_metadata = {
+            "training_start_time": datetime.now().isoformat(),
+            "mode": "jepa_pretrain",
+            "max_epochs": self.max_epochs,
+            "learning_rate": self.lr,
+            "weight_decay": self.weight_decay,
+            "milestones": str(self.milestones),
+            "gamma": self.gamma,
+            "clip_grad_value": self.clip_grad_value,
+            "accumulation_steps": self.accumulation_steps,
+            "save_freq": self.save_freq,
+            "save_dir": self.save_path,
+            "epoch_logs": {},
+        }
+        self.initialize_log_file(log_metadata)
         self.logger.info("Starting JEPA pretraining...")
 
         for epoch in range(1, self.max_epochs + 1):
@@ -166,8 +181,8 @@ class JEPAPretrainEngine(BaseEngine):
             train_time = time() - start
 
             self.logger.info(
-                f"[JEPA Pretrain] Epoch {epoch + 1}/{self.max_epochs}, "
-                f"loss={train_loss:.6f}, time={cost:.2f}s"
+                f"[JEPA Pretrain] Epoch {epoch}/{self.max_epochs}, "
+                f"loss={train_loss:.6f}, time={train_time:.2f}s"
             )
 
             if terminate:
