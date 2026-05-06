@@ -19,15 +19,20 @@ mkdir -p hpc_logs
 DATASETS=(pems03 pems04 pems07 pems08 pems-bay metr-la)
 TASKS=(short long)
 SEEDS=(0 1 2)
+# DATASETS=(pems07)
+# TASKS=(long)
+# SEEDS=(0 1 2)
 
 # JEPA-compatible models.
 # stgcn_jepa uses the separate STGCN JEPA implementation.
 # astgcn/gwnet/sttn/staeformer are refactored in their original model files.
 MODELS=(stgcn_jepa astgcn gwnet sttn staeformer)
+# MODELS=(astgcn sttn staeformer)
 
 NUM_WORKERS=8
 
-ROOT_DIR="jepa-repeat"
+DATE_TAG=$(date +"%Y-%m-%d")
+ROOT_DIR="jepa-repeat/${DATE_TAG}"
 RUNNER="scripts/test_run/scut_slurm_run.sh"
 
 for model in "${MODELS[@]}"; do
