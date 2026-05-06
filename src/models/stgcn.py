@@ -1,15 +1,24 @@
+# 
 import math
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 from src.base.model import BaseModel
-from einops import repeat
+from einops import rearrange, repeat
 
 
 class STGCN(BaseModel):
     """
     Reference code: https://github.com/hazdzz/STGCN
+
+    JEPA refactor notes:
+    - encode: input/target sequence + optional time features -> STConv hidden representation.
+    - predict: lightweight trainable predictor in hidden space. It preserves the
+      original hidden shape by default and is initialized as identity when possible.
+    - decode: original OutputBlock or fc head -> value-space forecasting output.
     """
 
     def __init__(self, gso, blocks, Kt, Ks, dropout, **args):
@@ -24,6 +33,8 @@ class STGCN(BaseModel):
         self.st_blocks = nn.Sequential(*modules)
         Ko = self.his_len - (len(blocks) - 3) * 2 * (Kt - 1)
         self.Ko = Ko
+        self.encoder_out_dim = blocks[-3][-1]
+
         if self.Ko > 1:
             self.output = OutputBlock(
                 Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], self.node_num, dropout
@@ -33,24 +44,183 @@ class STGCN(BaseModel):
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0])
             self.relu = nn.ReLU()
 
-    def forward(self, input_seq, input_features, *args, **kwargs):
-        # (b, t, n, f)
-        x = torch.concat(
-            [
-                input_seq,
-                repeat(input_features, "b t f -> b t n f", n=input_seq.shape[2]),
-            ],
-            dim=-1,
-        )
-        x = x.permute(0, 3, 1, 2)
-        x = self.st_blocks(x)
+        # JEPA hidden-space predictor.
+        # For the current STGCN setting, input_seq and target_seq normally share
+        # his_len == pred_len, so encode(input) and encode(target) both produce
+        # (B, Ko, N, encoder_out_dim). The predictor is still explicit so its
+        # parameters are collected by model.parameters().
+        self.jepa_time_predictor = None
+        if self.Ko > 0:
+            self.jepa_time_predictor = nn.Linear(self.Ko, self.Ko)
+            self._init_identity_linear(self.jepa_time_predictor)
+
+        self.jepa_dim_predictor = nn.Linear(self.encoder_out_dim, self.encoder_out_dim)
+        self._init_identity_linear(self.jepa_dim_predictor)
+
+    @staticmethod
+    def _init_identity_linear(layer: nn.Linear):
+        """Initialize a square Linear layer as identity when possible."""
+        if layer.in_features == layer.out_features:
+            nn.init.eye_(layer.weight)
+            if layer.bias is not None:
+                nn.init.zeros_(layer.bias)
+
+    def _build_stgcn_input(
+        self,
+        seq: torch.Tensor,
+        features: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Build STGCN input.
+
+        Args:
+            seq: (B, T, N, C_seq), usually C_seq = 1.
+            features: optional temporal/external features. Supported shapes:
+                - (B, T, F): repeated to every node;
+                - (B, T, N, F): used directly.
+
+        Returns:
+            x: (B, C_in, T, N), where C_in == self.input_dim.
+        """
+        if features is None:
+            x = seq
+        else:
+            if features.dim() == 3:
+                features = repeat(features, "b t f -> b t n f", n=seq.shape[2])
+            elif features.dim() == 4:
+                if features.shape[2] == 1 and seq.shape[2] != 1:
+                    features = features.expand(-1, -1, seq.shape[2], -1)
+            else:
+                raise ValueError(
+                    f"STGCN features must have shape (B, T, F) or (B, T, N, F), "
+                    f"but received {features.shape}."
+                )
+            x = torch.concat([seq, features], dim=-1)
+
+        if x.shape[-1] != self.input_dim:
+            raise ValueError(
+                f"STGCN expected input feature dim {self.input_dim}, but received {x.shape[-1]}. "
+                "Please provide matching input_features/target_features."
+            )
+
+        return rearrange(x, "b t n f -> b f t n")
+
+    def encode(
+        self,
+        seq: torch.Tensor,
+        features: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Encode input_seq or target_seq into STGCN hidden space.
+
+        Shapes:
+            seq/input_seq/label: (B, T, N, C_seq), usually C_seq = 1.
+            features: optional (B, T, F) or (B, T, N, F).
+            internal STGCN input: (B, C_in, T, N).
+            Ex/Ey return: (B, Ko, N, D), where D = encoder_out_dim.
+        """
+        x = self._build_stgcn_input(seq, features)
+        x = self.st_blocks(x)  # (B, D, Ko, N)
+        return rearrange(x, "b d t n -> b t n d")
+
+    def predict(self, Ex: torch.Tensor) -> torch.Tensor:
+        """
+        Predict target hidden representation from input hidden representation.
+
+        Shapes:
+            Ex: (B, Ko, N, D)
+            Ey_pred: (B, Ko, N, D)
+        """
+        x = Ex
+        if self.jepa_time_predictor is not None:
+            x = rearrange(x, "b t n d -> b n d t")
+            x = self.jepa_time_predictor(x)
+            x = rearrange(x, "b n d t -> b t n d")
+        x = self.jepa_dim_predictor(x)
+        return x
+
+    def decode(self, Ey_pred: torch.Tensor) -> torch.Tensor:
+        """
+        Decode hidden representation to value-space forecasting output.
+
+        Shapes:
+            Ey_pred: (B, Ko, N, D)
+            decoder input: (B, D, Ko, N)
+            y_pred: (B, pred_len, N, output_dim), matching original forward output.
+        """
+        x = rearrange(Ey_pred, "b t n d -> b d t n")
         if self.Ko > 1:
             x = self.output(x)
         elif self.Ko == 0:
             x = self.fc1(x.permute(0, 2, 3, 1))
             x = self.relu(x)
             x = self.fc2(x).permute(0, 3, 1, 2)
+        # Keep the original fallback behavior for Ko == 1, where the original
+        # implementation had no explicit output block.
         return x.transpose(2, 3)
+
+    def forward(
+        self,
+        input_seq: torch.Tensor,
+        input_features: Optional[torch.Tensor] = None,
+        target_seq: Optional[torch.Tensor] = None,
+        target_features: Optional[torch.Tensor] = None,
+        label: Optional[torch.Tensor] = None,
+        mode: str = "finetune",
+        *args,
+        **kwargs,
+    ):
+        """
+        Forward modes:
+            - mode="pretrain": return (Ey, Ey_pred) for JEPA hidden-space loss.
+            - mode="finetune": return y_pred for forecasting loss.
+
+        Shapes:
+            input_seq: (B, T, N, C_seq), usually C_seq = 1.
+            label/target_seq: (B, L, N, C_seq), usually C_seq = 1.
+            Ex: (B, Ko, N, D).
+            Ey: (B, Ko, N, D), when label length/features are compatible.
+            Ey_pred: (B, Ko, N, D).
+            y_pred: (B, pred_len, N, output_dim).
+        """
+        if mode == "pretrain":
+            label_seq = label if label is not None else target_seq
+            if label_seq is None:
+                raise ValueError("Labels need to be provided during the pre-training process.")
+
+            # Prefer target_features for target_seq/label encoding. If it is not
+            # available, reuse input_features only when the temporal length matches;
+            # otherwise fail explicitly to avoid feature-time misalignment.
+            label_features = target_features
+            if label_features is None and input_features is not None:
+                if input_features.shape[1] == label_seq.shape[1]:
+                    label_features = input_features
+                else:
+                    raise ValueError(
+                        "target_features must be provided for STGCN pretraining when "
+                        "label length differs from input_features length."
+                    )
+
+            Ex = self.encode(input_seq, input_features)
+            Ey = self.encode(label_seq, label_features)
+            Ey_pred = self.predict(Ex)
+
+            if Ey_pred.shape != Ey.shape:
+                raise ValueError(
+                    f"JEPA hidden shape mismatch: Ey_pred.shape={Ey_pred.shape}, "
+                    f"Ey.shape={Ey.shape}. STGCN currently expects compatible "
+                    "encoded input/label lengths, typically his_len == pred_len."
+                )
+            return Ey, Ey_pred
+
+        elif mode == "finetune":
+            Ex = self.encode(input_seq, input_features)
+            Ey_pred = self.predict(Ex)
+            y_pred = self.decode(Ey_pred)
+            return y_pred
+
+        else:
+            raise ValueError(f"Unsupported mode: {mode}")
 
 
 class STConvBlock(nn.Module):

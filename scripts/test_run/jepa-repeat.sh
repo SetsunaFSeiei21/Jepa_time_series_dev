@@ -23,10 +23,7 @@ SEEDS=(0 1 2)
 # TASKS=(long)
 # SEEDS=(0 1 2)
 
-# JEPA-compatible models.
-# stgcn_jepa uses the separate STGCN JEPA implementation.
-# astgcn/gwnet/sttn/staeformer are refactored in their original model files.
-MODELS=(stgcn_jepa astgcn gwnet sttn staeformer)
+MODELS=(stgcn astgcn gwnet sttn staeformer)
 # MODELS=(astgcn sttn staeformer)
 
 NUM_WORKERS=8
