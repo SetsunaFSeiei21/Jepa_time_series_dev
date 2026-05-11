@@ -78,7 +78,11 @@ class JEPAPretrainEngine(BaseEngine):
         self.model.train()
         avg_loss = 0.0
         terminate = False
-        accumulation_counter = 0
+
+        accumulation_steps = max(1, int(self.accumulation_steps))
+        total_batches = len(self.train_loader)
+
+        self.optimizer.zero_grad(set_to_none=True)
 
         pbar = tqdm(self.train_loader, desc="JEPA Pretraining", file=sys.stdout)
 
@@ -86,13 +90,13 @@ class JEPAPretrainEngine(BaseEngine):
             batch_data: BatchData
             batch = batch_data.to_device(self.device)
 
-            # 和原 ExpertEngine 保持一致：只 normalize input_seq。
-            # 但 JEPA target_seq 也进入 encoder，所以这里 target_seq 也建议 normalize。
+            # Normalize input and target in the same coordinate system.
             batch.input_seq = self.scalar.fit_transform(batch.input_seq)
             batch.target_seq = self.scalar.transform(batch.target_seq)
 
-            if accumulation_counter == 0:
-                self.optimizer.zero_grad()
+            # Determine current accumulation group size.
+            group_start = (batch_idx // accumulation_steps) * accumulation_steps
+            current_group_size = min(accumulation_steps, total_batches - group_start)
 
             Ey, Ey_pred = self.model(
                 input_seq=batch.input_seq,
@@ -102,6 +106,7 @@ class JEPAPretrainEngine(BaseEngine):
                 mode="pretrain",
             )
 
+            # Raw loss for logging
             loss, loss_dict = self.jepa_loss(Ey_pred, Ey)
 
             if torch.isnan(loss):
@@ -109,7 +114,9 @@ class JEPAPretrainEngine(BaseEngine):
                 terminate = True
                 break
 
-            loss.backward()
+            # Scale loss before backward.
+            loss_for_backward = loss / current_group_size
+            loss_for_backward.backward()
 
             avg_loss = avg_loss * (batch_idx / (batch_idx + 1)) + loss.item() / (
                 batch_idx + 1
@@ -120,32 +127,26 @@ class JEPAPretrainEngine(BaseEngine):
                 f"{loss.item():.4f}, "
                 f"Align: {loss_dict['loss_align'].item():.4f}, "
                 f"SIGReg: {loss_dict['loss_reg'].item():.4f}, "
-                f"Avg: {avg_loss:.4f}"
+                f"Avg: {avg_loss:.4f}, "
+                f"Accum: {(batch_idx % accumulation_steps) + 1}/{current_group_size}"
             )
 
-            accumulation_counter += 1
+            should_update = (
+                ((batch_idx + 1) % accumulation_steps == 0)
+                or ((batch_idx + 1) == total_batches)
+            )
 
-            if accumulation_counter % self.accumulation_steps == 0:
+            if should_update:
                 if self.clip_grad_value > 0:
                     torch.nn.utils.clip_grad_norm_(
                         self.model.parameters(),
                         self.clip_grad_value,
                     )
-                self.optimizer.step()
-                self.optimizer.zero_grad()
-                accumulation_counter = 0
 
-        if accumulation_counter > 0:
-            if self.clip_grad_value > 0:
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(),
-                    self.clip_grad_value,
-                )
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
 
         return terminate, avg_loss
-
     def save_checkpoint(self, epoch: int):
         checkpoint = {
             "epoch": epoch,

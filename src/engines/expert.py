@@ -75,69 +75,69 @@ class ExpertEngine(BaseEngine):
         avg_loss = 0.0
         terminate = False
 
-        accumulation_counter = 0
+        accumulation_steps = max(1, int(self.accumulation_steps))
+        total_batches = len(self.train_loader)
+        self.optimizer.zero_grad(set_to_none=True)
 
         pbar = tqdm(self.train_loader, desc="Training", file=sys.stdout)
         for batch_idx, batch_data in enumerate(pbar):
-            # Prepare batch
             batch_data: BatchData
             batch = batch_data.to_device(self.device)
             batch.input_seq = self.scalar.fit_transform(batch.input_seq)
 
-            # Zero gradients
-            if accumulation_counter == 0:
-                self.optimizer.zero_grad()
+            # Determine current accumulation group size.
+            # This handles the last group correctly when total_batches is not divisible
+            # by accumulation_steps.
+            group_start = (batch_idx // accumulation_steps) * accumulation_steps
+            current_group_size = min(accumulation_steps, total_batches - group_start)
 
-            # Forward pass
-            # Model should handle normalization internally
+            # Forward
             model_input = batch.to_dict()
             pred_norm = self.model(**model_input)
             pred = self.scalar.inverse_transform(pred_norm)
 
-            # Compute loss
+            # Raw loss for logging
             loss: torch.Tensor = self.loss_func(
-                batch.target_seq[~batch.target_mask], pred[~batch.target_mask]
+                batch.target_seq[~batch.target_mask],
+                pred[~batch.target_mask],
             )
 
-            # Check for NaN
             if torch.isnan(loss):
                 self.logger.error("Training loss is NaN. Terminating.")
                 terminate = True
                 break
 
-            # Backward pass with gradient accumulation
-            loss.backward()
+            # Scale loss before backward so accumulated gradients approximate
+            # the average gradient over current_group_size micro-batches.
+            loss_for_backward = loss / current_group_size
+            loss_for_backward.backward()
 
-            # Update progress bar
+            # Logging uses the unscaled loss.
             avg_loss = avg_loss * (batch_idx / (batch_idx + 1)) + loss.item() / (
                 batch_idx + 1
             )
             pbar.set_description(
-                f"Loss: {loss.item():.4f}, Average Loss: {avg_loss:.4f}"
+                f"Loss: {loss.item():.4f}, "
+                f"Average Loss: {avg_loss:.4f}, "
+                f"Accum: {(batch_idx % accumulation_steps) + 1}/{current_group_size}"
             )
 
-            # Gradient accumulation step
-            accumulation_counter += 1
-            if accumulation_counter % self.accumulation_steps == 0:
+            should_update = (
+                ((batch_idx + 1) % accumulation_steps == 0)
+                or ((batch_idx + 1) == total_batches)
+            )
+
+            if should_update:
                 if self.clip_grad_value > 0:
                     torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(), self.clip_grad_value
+                        self.model.parameters(),
+                        self.clip_grad_value,
                     )
-                self.optimizer.step()
-                self.optimizer.zero_grad()
-                accumulation_counter = 0
 
-        # Handle remaining accumulated gradients
-        if accumulation_counter > 0:
-            if self.clip_grad_value > 0:
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.clip_grad_value
-                )
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
 
         return terminate, avg_loss
-
     def validate(self) -> Dict[str, float]:
         """
         Validate model on validation set.

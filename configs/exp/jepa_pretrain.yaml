@@ -1,4 +1,4 @@
-batch_size: 8
+batch_size: 1 # 8
 device_id: 0
 num_workers: 4
 prefetch_factor: 8
@@ -8,14 +8,14 @@ weight_decay: 0.0001
 milestones: [10, 20, 30, 40]
 gamma: 0.5
 clip_grad_value: 5
-accumulation_steps: 1
+accumulation_steps: 8
 save_freq: 10
 model_param_filename: "jepa_pretrain_parameters.pt"
 
 train_mode: pretrain
 
 jepa_sigreg_alpha: 0.1
-jepa_num_points: 128
-jepa_num_slices: 512
+jepa_num_points: 65 # 129
+jepa_num_slices: 64 # 512
 jepa_detach_target: true
 jepa_reg_on: both

@@ -17,7 +17,8 @@ mkdir -p hpc_logs
 
 # Full experiment setting:
 DATASETS=(pems03 pems04 pems07 pems08 pems-bay metr-la)
-TASKS=(short long)
+# TASKS=(short long)
+TASKS=(test_task)
 SEEDS=(0 1 2)
 # DATASETS=(pems07)
 # TASKS=(long)
