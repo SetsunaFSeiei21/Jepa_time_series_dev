@@ -57,7 +57,7 @@ for model in "${MODELS[@]}"; do
             task=${task} \
             exp=jepa_finetune \
             seed=${seed} \
-            exp.max_epochs=20 \
+            exp.max_epochs=2 \
             exp.num_workers=${NUM_WORKERS} \
             'exp.pretrain_ckpt=""' \
             hydra.run.dir=${FT20_DIR}
