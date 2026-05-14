@@ -64,9 +64,90 @@ class ExpertEngine(BaseEngine):
         self.best_criteria = float("inf")
         self.best_epoch = 0
 
+    # def train_epoch(self) -> Tuple[bool, float]:
+    #     """
+    #     Train for one epoch.
+
+    #     Returns:
+    #         Tuple of (terminate_flag, average_loss)
+    #     """
+    #     self.model.train()
+    #     avg_loss = 0.0
+    #     terminate = False
+
+    #     accumulation_steps = max(1, int(self.accumulation_steps))
+    #     total_batches = len(self.train_loader)
+    #     self.optimizer.zero_grad(set_to_none=True)
+
+    #     pbar = tqdm(self.train_loader, desc="Training", file=sys.stdout)
+    #     for batch_idx, batch_data in enumerate(pbar):
+    #         batch_data: BatchData
+    #         batch = batch_data.to_device(self.device)
+    #         batch.input_seq = self.scalar.fit_transform(batch.input_seq)
+
+    #         # Determine current accumulation group size.
+    #         # This handles the last group correctly when total_batches is not divisible
+    #         # by accumulation_steps.
+    #         group_start = (batch_idx // accumulation_steps) * accumulation_steps
+    #         current_group_size = min(accumulation_steps, total_batches - group_start)
+
+    #         # Forward
+    #         model_input = batch.to_dict()
+    #         pred_norm = self.model(**model_input)
+    #         pred = self.scalar.inverse_transform(pred_norm)
+
+    #         # Raw loss for logging
+    #         loss: torch.Tensor = self.loss_func(
+    #             batch.target_seq[~batch.target_mask],
+    #             pred[~batch.target_mask],
+    #         )
+
+    #         if torch.isnan(loss):
+    #             self.logger.error("Training loss is NaN. Terminating.")
+    #             terminate = True
+    #             break
+
+    #         # Scale loss before backward so accumulated gradients approximate
+    #         # the average gradient over current_group_size micro-batches.
+    #         loss_for_backward = loss / current_group_size
+    #         loss_for_backward.backward()
+
+    #         # Logging uses the unscaled loss.
+    #         avg_loss = avg_loss * (batch_idx / (batch_idx + 1)) + loss.item() / (
+    #             batch_idx + 1
+    #         )
+    #         pbar.set_description(
+    #             f"Loss: {loss.item():.4f}, "
+    #             f"Average Loss: {avg_loss:.4f}, "
+    #             f"Accum: {(batch_idx % accumulation_steps) + 1}/{current_group_size}"
+    #         )
+
+    #         should_update = (
+    #             ((batch_idx + 1) % accumulation_steps == 0)
+    #             or ((batch_idx + 1) == total_batches)
+    #         )
+
+    #         if should_update:
+    #             if self.clip_grad_value > 0:
+    #                 torch.nn.utils.clip_grad_norm_(
+    #                     self.model.parameters(),
+    #                     self.clip_grad_value,
+    #                 )
+
+    #             self.optimizer.step()
+    #             self.optimizer.zero_grad(set_to_none=True)
+
+    #     return terminate, avg_loss
+    
     def train_epoch(self) -> Tuple[bool, float]:
         """
         Train for one epoch.
+
+        This version is robust to:
+        1. fully-masked target batches;
+        2. NaN/Inf values in input, target, or prediction;
+        3. small batch size, e.g., batch_size = 1 or 2;
+        4. gradient accumulation with skipped invalid micro-batches.
 
         Returns:
             Tuple of (terminate_flag, average_loss)
@@ -76,56 +157,149 @@ class ExpertEngine(BaseEngine):
         terminate = False
 
         accumulation_steps = max(1, int(self.accumulation_steps))
-        total_batches = len(self.train_loader)
+        valid_micro_steps = 0
+
         self.optimizer.zero_grad(set_to_none=True)
 
         pbar = tqdm(self.train_loader, desc="Training", file=sys.stdout)
+
         for batch_idx, batch_data in enumerate(pbar):
             batch_data: BatchData
             batch = batch_data.to_device(self.device)
+
+            # ------------------------------------------------------------
+            # 1. Fill masked values before normalization/model forward.
+            #    This prevents NaN/null values from entering the model.
+            # ------------------------------------------------------------
+            if batch.input_mask is not None:
+                batch.input_seq = torch.where(
+                    batch.input_mask,
+                    torch.zeros_like(batch.input_seq),
+                    batch.input_seq,
+                )
+
+            if batch.target_mask is not None:
+                batch.target_seq = torch.where(
+                    batch.target_mask,
+                    torch.zeros_like(batch.target_seq),
+                    batch.target_seq,
+                )
+
+            # Extra safety: remove any remaining NaN/Inf values.
+            batch.input_seq = torch.nan_to_num(
+                batch.input_seq,
+                nan=0.0,
+                posinf=0.0,
+                neginf=0.0,
+            )
+            batch.target_seq = torch.nan_to_num(
+                batch.target_seq,
+                nan=0.0,
+                posinf=0.0,
+                neginf=0.0,
+            )
+
+            # ------------------------------------------------------------
+            # 2. Normalize input sequence.
+            # ------------------------------------------------------------
             batch.input_seq = self.scalar.fit_transform(batch.input_seq)
+            batch.input_seq = torch.nan_to_num(
+                batch.input_seq,
+                nan=0.0,
+                posinf=0.0,
+                neginf=0.0,
+            )
 
-            # Determine current accumulation group size.
-            # This handles the last group correctly when total_batches is not divisible
-            # by accumulation_steps.
-            group_start = (batch_idx // accumulation_steps) * accumulation_steps
-            current_group_size = min(accumulation_steps, total_batches - group_start)
-
-            # Forward
+            # ------------------------------------------------------------
+            # 3. Forward.
+            # ------------------------------------------------------------
             model_input = batch.to_dict()
             pred_norm = self.model(**model_input)
             pred = self.scalar.inverse_transform(pred_norm)
 
-            # Raw loss for logging
-            loss: torch.Tensor = self.loss_func(
-                batch.target_seq[~batch.target_mask],
-                pred[~batch.target_mask],
-            )
+            # ------------------------------------------------------------
+            # 4. Build valid supervision mask.
+            # ------------------------------------------------------------
+            if batch.target_mask is None:
+                supervision_mask = torch.ones_like(batch.target_seq, dtype=torch.bool)
+            else:
+                supervision_mask = ~batch.target_mask
 
-            if torch.isnan(loss):
-                self.logger.error("Training loss is NaN. Terminating.")
+            # Remove invalid target positions.
+            supervision_mask = supervision_mask & torch.isfinite(batch.target_seq)
+
+            valid_target_count = supervision_mask.sum().item()
+
+            if valid_target_count == 0:
+                self.logger.warning(
+                    f"Skip batch {batch_idx}: no valid target values after masking."
+                )
+                continue
+
+            # If prediction is NaN/Inf on valid target positions, this is a real model/numerical issue.
+            pred_on_valid = pred[supervision_mask]
+            target_on_valid = batch.target_seq[supervision_mask]
+
+            if torch.isnan(pred_on_valid).any() or torch.isinf(pred_on_valid).any():
+                self.logger.error(
+                    f"Prediction contains NaN/Inf at batch {batch_idx}. "
+                    f"valid_target_count={valid_target_count}, "
+                    f"pred_nan={torch.isnan(pred_on_valid).sum().item()}, "
+                    f"pred_inf={torch.isinf(pred_on_valid).sum().item()}."
+                )
                 terminate = True
                 break
 
-            # Scale loss before backward so accumulated gradients approximate
-            # the average gradient over current_group_size micro-batches.
-            loss_for_backward = loss / current_group_size
+            if torch.isnan(target_on_valid).any() or torch.isinf(target_on_valid).any():
+                self.logger.error(
+                    f"Target contains NaN/Inf at batch {batch_idx}. "
+                    f"valid_target_count={valid_target_count}, "
+                    f"target_nan={torch.isnan(target_on_valid).sum().item()}, "
+                    f"target_inf={torch.isinf(target_on_valid).sum().item()}."
+                )
+                terminate = True
+                break
+
+            # ------------------------------------------------------------
+            # 5. Compute safe loss.
+            # ------------------------------------------------------------
+            loss: torch.Tensor = self.loss_func(
+                target_on_valid,
+                pred_on_valid,
+            )
+
+            if torch.isnan(loss) or torch.isinf(loss):
+                self.logger.error(
+                    f"Training loss is NaN/Inf at batch {batch_idx}. "
+                    f"valid_target_count={valid_target_count}."
+                )
+                terminate = True
+                break
+
+            # ------------------------------------------------------------
+            # 6. Backward with gradient accumulation.
+            # ------------------------------------------------------------
+            loss_for_backward = loss / accumulation_steps
             loss_for_backward.backward()
 
-            # Logging uses the unscaled loss.
-            avg_loss = avg_loss * (batch_idx / (batch_idx + 1)) + loss.item() / (
-                batch_idx + 1
+            valid_micro_steps += 1
+
+            avg_loss = avg_loss * ((valid_micro_steps - 1) / valid_micro_steps) + (
+                loss.item() / valid_micro_steps
             )
+
+            accum_display = valid_micro_steps % accumulation_steps
+            if accum_display == 0:
+                accum_display = accumulation_steps
+
             pbar.set_description(
                 f"Loss: {loss.item():.4f}, "
                 f"Average Loss: {avg_loss:.4f}, "
-                f"Accum: {(batch_idx % accumulation_steps) + 1}/{current_group_size}"
+                f"Valid: {valid_target_count}, "
+                f"Accum: {accum_display}/{accumulation_steps}"
             )
 
-            should_update = (
-                ((batch_idx + 1) % accumulation_steps == 0)
-                or ((batch_idx + 1) == total_batches)
-            )
+            should_update = valid_micro_steps % accumulation_steps == 0
 
             if should_update:
                 if self.clip_grad_value > 0:
@@ -137,7 +311,29 @@ class ExpertEngine(BaseEngine):
                 self.optimizer.step()
                 self.optimizer.zero_grad(set_to_none=True)
 
+        # ------------------------------------------------------------
+        # 7. Step remaining accumulated gradients.
+        # ------------------------------------------------------------
+        if (
+            not terminate
+            and valid_micro_steps > 0
+            and valid_micro_steps % accumulation_steps != 0
+        ):
+            if self.clip_grad_value > 0:
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    self.clip_grad_value,
+                )
+
+            self.optimizer.step()
+            self.optimizer.zero_grad(set_to_none=True)
+
+        if valid_micro_steps == 0:
+            self.logger.error("No valid training batches in this epoch.")
+            terminate = True
+
         return terminate, avg_loss
+    
     def validate(self) -> Dict[str, float]:
         """
         Validate model on validation set.
@@ -156,9 +352,79 @@ class ExpertEngine(BaseEngine):
         """
         return self._evaluate(self.test_loader, prefix="Test")
 
+    # def _evaluate(self, loader, prefix: str = "Evaluation") -> Dict[str, float]:
+    #     """
+    #     Internal evaluation method.
+
+    #     Args:
+    #         loader: DataLoader for evaluation
+    #         prefix: Progress bar prefix
+
+    #     Returns:
+    #         Dictionary of metrics
+    #     """
+    #     self.model.eval()
+    #     all_metrics = None
+    #     valid_iter = 0
+    #     with torch.no_grad():
+    #         pbar = tqdm(loader, desc=prefix, file=sys.stdout)
+    #         for batch_data in pbar:
+    #             # Prepare batch
+    #             batch_data: BatchData
+
+    #             if batch_data.input_mask.all() or batch_data.target_mask.all():
+    #                 continue
+
+    #             batch = batch_data.to_device(self.device)
+    #             batch.input_seq = self.scalar.fit_transform(batch.input_seq)
+
+    #             # Forward pass
+    #             model_input = batch.to_dict()
+    #             pred_norm = self.model(**model_input)
+    #             pred = self.scalar.inverse_transform(pred_norm)
+
+    #             # Compute metrics
+    #             metrics = compute_all_metrics(
+    #                 pred[~batch.target_mask],
+    #                 batch.target_seq[~batch.target_mask],
+    #             )
+
+    #             if all_metrics is None:
+    #                 all_metrics = metrics
+    #             else:
+    #                 for k, v in metrics.items():
+    #                     if np.isnan(v):
+    #                         self.logger.warning(f"Found NaN value in evaluation: {k}.")
+    #                         continue
+    #                     all_metrics[k] = all_metrics[k] * (
+    #                         valid_iter / (valid_iter + 1)
+    #                     ) + v / (valid_iter + 1)
+    #             valid_iter += 1
+    #             desc = "{prefix} {metric_name}: ({metric_values}), ".format(
+    #                 prefix="Evaluation",
+    #                 metric_name="-".join(metrics.keys()),
+    #                 metric_values="-".join(
+    #                     "{:.4f}".format(value) for value in metrics.values()
+    #                 ),
+    #             )
+    #             desc += "Average {metric_name}: ({metric_values})".format(
+    #                 metric_name="-".join(all_metrics.keys()),
+    #                 metric_values="-".join(
+    #                     "{:.4f}".format(value) for value in all_metrics.values()
+    #                 ),
+    #             )
+    #             pbar.set_description(desc)
+
+    #     return all_metrics
+    
     def _evaluate(self, loader, prefix: str = "Evaluation") -> Dict[str, float]:
         """
         Internal evaluation method.
+
+        This version is robust to:
+        1. fully-masked target batches;
+        2. NaN/Inf in input, target, or prediction;
+        3. empty metric tensors after masking.
 
         Args:
             loader: DataLoader for evaluation
@@ -170,54 +436,131 @@ class ExpertEngine(BaseEngine):
         self.model.eval()
         all_metrics = None
         valid_iter = 0
+
         with torch.no_grad():
             pbar = tqdm(loader, desc=prefix, file=sys.stdout)
-            for batch_data in pbar:
-                # Prepare batch
+
+            for batch_idx, batch_data in enumerate(pbar):
                 batch_data: BatchData
 
-                if batch_data.input_mask.all() or batch_data.target_mask.all():
+                batch = batch_data.to_device(self.device)
+
+                # ------------------------------------------------------------
+                # 1. Fill masked values before normalization/model forward.
+                # ------------------------------------------------------------
+                if batch.input_mask is not None:
+                    batch.input_seq = torch.where(
+                        batch.input_mask,
+                        torch.zeros_like(batch.input_seq),
+                        batch.input_seq,
+                    )
+
+                if batch.target_mask is not None:
+                    batch.target_seq = torch.where(
+                        batch.target_mask,
+                        torch.zeros_like(batch.target_seq),
+                        batch.target_seq,
+                    )
+
+                batch.input_seq = torch.nan_to_num(
+                    batch.input_seq,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0,
+                )
+                batch.target_seq = torch.nan_to_num(
+                    batch.target_seq,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0,
+                )
+
+                # ------------------------------------------------------------
+                # 2. Build valid target mask.
+                # ------------------------------------------------------------
+                if batch.target_mask is None:
+                    valid_mask = torch.ones_like(batch.target_seq, dtype=torch.bool)
+                else:
+                    valid_mask = ~batch.target_mask
+
+                valid_mask = valid_mask & torch.isfinite(batch.target_seq)
+
+                if valid_mask.sum().item() == 0:
+                    self.logger.warning(
+                        f"Skip {prefix} batch {batch_idx}: no valid target values."
+                    )
                     continue
 
-                batch = batch_data.to_device(self.device)
+                # ------------------------------------------------------------
+                # 3. Forward.
+                # ------------------------------------------------------------
                 batch.input_seq = self.scalar.fit_transform(batch.input_seq)
+                batch.input_seq = torch.nan_to_num(
+                    batch.input_seq,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0,
+                )
 
-                # Forward pass
                 model_input = batch.to_dict()
                 pred_norm = self.model(**model_input)
                 pred = self.scalar.inverse_transform(pred_norm)
 
-                # Compute metrics
+                valid_mask = valid_mask & torch.isfinite(pred)
+
+                if valid_mask.sum().item() == 0:
+                    self.logger.warning(
+                        f"Skip {prefix} batch {batch_idx}: no finite prediction on valid targets."
+                    )
+                    continue
+
+                # ------------------------------------------------------------
+                # 4. Compute metrics.
+                # ------------------------------------------------------------
                 metrics = compute_all_metrics(
-                    pred[~batch.target_mask],
-                    batch.target_seq[~batch.target_mask],
+                    pred[valid_mask],
+                    batch.target_seq[valid_mask],
                 )
 
                 if all_metrics is None:
                     all_metrics = metrics
                 else:
                     for k, v in metrics.items():
-                        if np.isnan(v):
-                            self.logger.warning(f"Found NaN value in evaluation: {k}.")
+                        if np.isnan(v) or np.isinf(v):
+                            self.logger.warning(
+                                f"Found NaN/Inf value in evaluation metric: {k}."
+                            )
                             continue
+
                         all_metrics[k] = all_metrics[k] * (
                             valid_iter / (valid_iter + 1)
                         ) + v / (valid_iter + 1)
+
                 valid_iter += 1
+
                 desc = "{prefix} {metric_name}: ({metric_values}), ".format(
-                    prefix="Evaluation",
+                    prefix=prefix,
                     metric_name="-".join(metrics.keys()),
                     metric_values="-".join(
                         "{:.4f}".format(value) for value in metrics.values()
                     ),
                 )
+
                 desc += "Average {metric_name}: ({metric_values})".format(
                     metric_name="-".join(all_metrics.keys()),
                     metric_values="-".join(
                         "{:.4f}".format(value) for value in all_metrics.values()
                     ),
                 )
+
                 pbar.set_description(desc)
+
+        if all_metrics is None:
+            self.logger.error(f"No valid batches found during {prefix}.")
+            return {
+                "MAE": float("inf"),
+                "RMSE": float("inf"),
+            }
 
         return all_metrics
 
