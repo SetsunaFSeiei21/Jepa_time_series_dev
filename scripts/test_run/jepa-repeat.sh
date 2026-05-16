@@ -16,7 +16,8 @@ mkdir -p hpc_logs
 # MODELS=(stgcn_jepa)
 
 # Full experiment setting:
-DATASETS=(pems03 pems04 pems07 pems08 pems-bay metr-la)
+# DATASETS=(pems03 pems04 pems07 pems08 pems-bay metr-la)
+DATASETS=(pems07)
 # TASKS=(short long)
 TASKS=(test_task)
 SEEDS=(0)
@@ -25,7 +26,7 @@ SEEDS=(0)
 # SEEDS=(0 1 2)
 
 MODELS=(stgcn astgcn gwnet sttn staeformer)
-# MODELS=(astgcn sttn staeformer)
+# MODELS=(astgcn)
 
 NUM_WORKERS=8
 

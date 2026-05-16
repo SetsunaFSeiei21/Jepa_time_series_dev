@@ -1,0 +1,31 @@
+{
+  "training_start_time": "2026-05-16T01:19:47.148068",
+  "mode": "jepa_pretrain",
+  "max_epochs": 2,
+  "learning_rate": 0.0005,
+  "weight_decay": 0.0001,
+  "milestones": "[10, 20, 30, 40]",
+  "gamma": 0.5,
+  "clip_grad_value": 5,
+  "accumulation_steps": 8,
+  "save_freq": 2,
+  "save_dir": "/public/home/202411094934/python_project/Spatio-Temporal-Library/jepa-debug/num_workers0/gwnet/pretrain10/pems07/test_task/seed_0",
+  "epoch_logs": {
+    "Pretrain 1": {
+      "timestamp": "2026-05-16T03:30:22.768333",
+      "current_learning_rate": 0.0005,
+      "loss": 956.9155052633793,
+      "time_seconds": 7835.6105325222015,
+      "memory_reserved_mb": 27890.0,
+      "memory_allocated_mb": 37.5478515625
+    },
+    "Pretrain 2": {
+      "timestamp": "2026-05-16T05:40:38.918347",
+      "current_learning_rate": 0.0005,
+      "loss": 791.4813740561958,
+      "time_seconds": 7816.06051158905,
+      "memory_reserved_mb": 27890.0,
+      "memory_allocated_mb": 37.5478515625
+    }
+  }
+}

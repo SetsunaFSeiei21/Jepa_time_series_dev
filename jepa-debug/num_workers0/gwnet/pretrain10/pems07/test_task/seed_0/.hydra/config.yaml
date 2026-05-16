@@ -1,0 +1,48 @@
+meta_path: /public/home/202411094934/python_project/Spatio-Temporal-Library/data/STFM-datasets/
+seed: 0
+dataset:
+  name: PEMS07
+  train_point: 0.0
+  train_val_point: 0.6
+  val_test_point: 0.8
+  use_dataset_norm: true
+model:
+  _target_: src.models.gwnet.GWNET
+  init_dim: 128
+  skip_channels: 256
+  end_channels: 512
+  dropout: 0.1
+  kernel_size: 2
+  blocks: 4
+  layers: 2
+  adp_adj: true
+task:
+  his_len: 192
+  pred_len: 192
+  patch_len: 24
+  stride: 12
+  moving_avg: 25
+exp:
+  batch_size: 1
+  device_id: 0
+  num_workers: 1
+  prefetch_factor: 8
+  max_epochs: 2
+  lr: 0.0005
+  weight_decay: 0.0001
+  milestones:
+  - 10
+  - 20
+  - 30
+  - 40
+  gamma: 0.5
+  clip_grad_value: 5
+  accumulation_steps: 8
+  save_freq: 2
+  model_param_filename: jepa_pretrain_parameters.pt
+  train_mode: pretrain
+  jepa_sigreg_alpha: 0.1
+  jepa_num_points: 65
+  jepa_num_slices: 64
+  jepa_detach_target: true
+  jepa_reg_on: both
