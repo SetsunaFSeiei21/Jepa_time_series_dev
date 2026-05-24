@@ -17,16 +17,14 @@ mkdir -p hpc_logs
 
 # Full experiment setting:
 # DATASETS=(pems03 pems04 pems07 pems08 pems-bay metr-la)
-DATASETS=(pems07)
+DATASETS=(metr-la)
 # TASKS=(short long)
 TASKS=(test_task)
-SEEDS=(0)
-# DATASETS=(pems07)
-# TASKS=(long)
 # SEEDS=(0 1 2)
+SEEDS=(2)
 
-MODELS=(stgcn astgcn gwnet sttn staeformer)
-# MODELS=(astgcn)
+# MODELS=(stgcn astgcn gwnet sttn staeformer)
+MODELS=(staeformer)
 
 NUM_WORKERS=8
 
@@ -58,7 +56,7 @@ for model in "${MODELS[@]}"; do
             task=${task} \
             exp=jepa_finetune \
             seed=${seed} \
-            exp.max_epochs=2 \
+            exp.max_epochs=20 \
             exp.num_workers=${NUM_WORKERS} \
             'exp.pretrain_ckpt=""' \
             hydra.run.dir=${FT20_DIR}
@@ -67,7 +65,7 @@ for model in "${MODELS[@]}"; do
         # B1. pretrain 10
         #################################
         PRETRAIN_DIR="${MODEL_ROOT_DIR}/pretrain10/${dataset}/${task}/seed_${seed}"
-        PRETRAIN_CKPT="${PROJECT_ROOT}/${PRETRAIN_DIR}/jepa_pretrain_epoch_2.pth"
+        PRETRAIN_CKPT="${PROJECT_ROOT}/${PRETRAIN_DIR}/jepa_pretrain_epoch_10.pth"
 
         PRETRAIN_JOB_ID=$(sbatch --parsable \
           -J "pt10-${model_tag}-${dataset}-${task}-s${seed}" \
@@ -80,7 +78,7 @@ for model in "${MODELS[@]}"; do
             task=${task} \
             exp=jepa_pretrain \
             seed=${seed} \
-            exp.max_epochs=2 \
+            exp.max_epochs=10 \
             exp.save_freq=2  \
             exp.num_workers=${NUM_WORKERS} \
             hydra.run.dir=${PRETRAIN_DIR})
@@ -102,7 +100,7 @@ for model in "${MODELS[@]}"; do
             task=${task} \
             exp=jepa_finetune \
             seed=${seed} \
-            exp.max_epochs=2 \
+            exp.max_epochs=10 \
             exp.num_workers=${NUM_WORKERS} \
             exp.pretrain_ckpt=${PRETRAIN_CKPT} \
             hydra.run.dir=${PT10_FT10_DIR}

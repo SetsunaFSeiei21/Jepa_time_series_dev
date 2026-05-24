@@ -1,5 +1,6 @@
 #!/bin/bash
-#SBATCH --partition=gpuA800
+#SBATCH --partition=ex01A800
+#SBATCH --account=b_phzhwu
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

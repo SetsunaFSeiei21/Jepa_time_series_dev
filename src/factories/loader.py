@@ -196,9 +196,11 @@ def create_data_loaders(
     loader_kwargs = {
         "num_workers": loader_config.num_workers,
         "prefetch_factor": loader_config.prefetch_factor,
-        "pin_memory": True,
-        "pin_memory_device": str(device),
-        "persistent_workers": True,
+        # "pin_memory": True,
+        # "pin_memory_device": str(device),
+        # "persistent_workers": True,
+        "pin_memory": False,
+        "persistent_workers": False
     }
 
     # Create DataLoaders
