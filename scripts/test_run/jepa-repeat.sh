@@ -17,14 +17,14 @@ mkdir -p hpc_logs
 
 # Full experiment setting:
 # DATASETS=(pems03 pems04 pems07 pems08 pems-bay metr-la)
-DATASETS=(metr-la)
+DATASETS=(pems07)
 # TASKS=(short long)
 TASKS=(test_task)
 # SEEDS=(0 1 2)
-SEEDS=(2)
+SEEDS=(1)
 
 # MODELS=(stgcn astgcn gwnet sttn staeformer)
-MODELS=(staeformer)
+MODELS=(astgcn)
 
 NUM_WORKERS=8
 
