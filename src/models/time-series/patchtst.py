@@ -740,20 +740,293 @@ class PatchTST(BaseModel):
                 subtract_last=subtract_last,
             )
             self.patch_num = self.model.patch_num
+            # JEPA predictor baseline:
+            # PatchTST hidden representation:
+            #   Ex:      (B, N, d_model, patch_num)
+            #   Ey:      (B, N, d_model, patch_num)
+            #   Ey_pred: (B, N, d_model, patch_num)
+            #
+            # This v0 predictor maps hidden dimension d_model -> d_model
+            # patch-wisely. It does not change patch_num.
+            #
+            # Note:
+            #   This v0 version assumes his_len == pred_len, so Ex and Ey
+            #   have the same patch_num after the same PatchTST patching/backbone.
+            self.d_model = d_model
+            self.jepa_predictor = nn.Sequential(
+                nn.Linear(d_model, d_model),
+                nn.GELU(),
+                nn.Linear(d_model, d_model),
+            )
 
-    def forward(self, input_seq, *args, **kwargs):
-        """Args:
-        x: rank 3 tensor with shape [batch size x features x sequence length]
+    # def forward(self, input_seq, *args, **kwargs):
+    #     """Args:
+    #     x: rank 3 tensor with shape [batch size x features x sequence length]
+    #     """
+    #     x = input_seq.squeeze(-1)
+    #     x = rearrange(x, "b t n -> b n t")
+    #     if self.decomposition:
+    #         res_init, trend_init = self.decomp_module(x)
+    #         res = self.model_res(res_init)
+    #         trend = self.model_trend(trend_init)
+    #         x = res + trend
+    #     else:
+    #         x = self.model(x)
+    #     x = rearrange(x, "b n t -> b t n")
+    #     x = x.unsqueeze(-1)
+    #     return x
+    
+    def _check_non_decomposition(self):
         """
-        x = input_seq.squeeze(-1)
-        x = rearrange(x, "b t n -> b n t")
+        PatchTST decomposition branch has two separate backbones / heads
+        for residual and trend. This v0 JEPA refactor only supports the
+        default non-decomposition path.
+        """
         if self.decomposition:
-            res_init, trend_init = self.decomp_module(x)
-            res = self.model_res(res_init)
-            trend = self.model_trend(trend_init)
-            x = res + trend
-        else:
-            x = self.model(x)
-        x = rearrange(x, "b n t -> b t n")
-        x = x.unsqueeze(-1)
-        return x
+            raise NotImplementedError(
+                "PatchTST JEPA v0 does not support decomposition=True. "
+                "The residual/trend hidden representations require a manual "
+                "JEPA design instead of forced merging."
+            )
+
+    def _to_bnt(self, seq, name="seq"):
+        """
+        Convert supported sequence layouts to PatchTST internal layout.
+
+        Supported:
+            input_seq / label:
+                (B, T, N, 1)  current dataloader format
+                (B, T, N)     squeezed format
+                (B, N, T)     PatchTST / JEPA-style format
+
+        Return:
+            seq: (B, N, T)
+        """
+        if seq is None:
+            raise ValueError(f"{name} must not be None.")
+
+        if seq.dim() == 4:
+            if seq.size(-1) != 1:
+                raise ValueError(
+                    f"PatchTST expects {name} last channel dim = 1, "
+                    f"but got shape {tuple(seq.shape)}."
+                )
+            seq = seq.squeeze(-1)
+
+        if seq.dim() != 3:
+            raise ValueError(
+                f"PatchTST expects {name} as (B,T,N,1), (B,T,N), or (B,N,T), "
+                f"but got shape {tuple(seq.shape)}."
+            )
+
+        # Existing project convention: (B, T, N)
+        if seq.size(-1) == self.node_num:
+            return rearrange(seq, "b t n -> b n t")
+
+        # PatchTST / JEPA convention: (B, N, T)
+        if seq.size(1) == self.node_num:
+            return seq
+
+        raise ValueError(
+            f"Cannot infer node dimension for {name}. "
+            f"Expected one dimension to equal node_num={self.node_num}, "
+            f"but got shape {tuple(seq.shape)}."
+        )
+
+    def _encode_with_single_backbone(self, seq, model):
+        """
+        Run PatchTST backbone until hidden representation, without output head.
+
+        Args:
+            seq:
+                (B, N, T)
+            model:
+                self.model, i.e. one _PatchTST_backbone instance.
+
+        Return:
+            hidden:
+                (B, N, d_model, patch_num)
+        """
+        # Reuse original RevIN normalization.
+        if model.revin:
+            seq = model.revin_layer(seq, torch.tensor(True, dtype=torch.bool))
+
+        # Reuse original padding + unfold logic from _PatchTST_backbone.forward.
+        # seq: (B, N, T)
+        seq = model.padding_patch_layer(seq)
+        b, c, s = seq.size()
+
+        # unfold input:
+        #   seq reshape: (B*N, 1, 1, padded_T)
+        #   unfold:      (B*N, patch_len, patch_num)
+        #   patches:     (B, N, patch_len, patch_num)
+        patches = seq.reshape(-1, 1, 1, s)
+        patches = model.unfold(patches)
+        patches = patches.permute(0, 2, 1)
+        patches = patches.reshape(b, c, -1, model.patch_len)
+        patches = patches.permute(0, 1, 3, 2)
+
+        # Original PatchTST encoder:
+        # patches: (B, N, patch_len, patch_num)
+        # hidden:  (B, N, d_model, patch_num)
+        hidden = model.backbone(patches)
+        return hidden
+
+    def encode(self, seq, seq_features=None, *args, **kwargs):
+        """
+        Encode input or label into PatchTST embedding space.
+
+        input_seq:
+            (B, T, N, 1) or (B, T, N) or (B, N, T)
+
+        label / target_seq:
+            (B, L, N, 1) or (B, L, N) or (B, N, L)
+
+        Return:
+            Ex / Ey: (B, N, d_model, patch_num)
+
+        Note:
+            This v0 JEPA refactor assumes his_len == pred_len.
+            Otherwise input_seq and label may produce different patch_num.
+        """
+        self._check_non_decomposition()
+
+        seq = self._to_bnt(seq, name="seq")
+
+        if seq.size(-1) != self.his_len:
+            raise ValueError(
+                f"PatchTST encode expects temporal length == his_len={self.his_len}, "
+                f"but got {seq.size(-1)}. "
+                "This v0 JEPA refactor assumes his_len == pred_len for label encoding."
+            )
+
+        hidden = self._encode_with_single_backbone(seq, self.model)
+        return hidden
+
+    def predict(self, Ex):
+        """
+        Predict label hidden representation from input hidden representation.
+
+        Ex:
+            (B, N, d_model, patch_num)
+
+        Ey_pred:
+            (B, N, d_model, patch_num)
+        """
+        if Ex.dim() != 4:
+            raise ValueError(
+                f"PatchTST JEPA predictor expects Ex with shape "
+                f"(B,N,d_model,patch_num), but got {tuple(Ex.shape)}."
+            )
+
+        if Ex.size(2) != self.d_model:
+            raise ValueError(
+                f"PatchTST JEPA predictor expects hidden dim d_model={self.d_model}, "
+                f"but got {Ex.size(2)}."
+            )
+
+        # nn.Linear acts on the last dimension.
+        # Ex:      (B, N, d_model, patch_num)
+        # x:       (B, N, patch_num, d_model)
+        # mapped:  (B, N, patch_num, d_model)
+        # Ey_pred: (B, N, d_model, patch_num)
+        x = Ex.permute(0, 1, 3, 2)
+        x = self.jepa_predictor(x)
+        Ey_pred = x.permute(0, 1, 3, 2)
+        return Ey_pred
+
+    def decode(self, Ey_pred, input_seq=None, *args, **kwargs):
+        """
+        Decode predicted PatchTST hidden representation into value space.
+
+        Ey_pred:
+            (B, N, d_model, patch_num)
+
+        Return:
+            y_pred: (B, L, N, 1)
+        """
+        self._check_non_decomposition()
+
+        if Ey_pred.dim() != 4:
+            raise ValueError(
+                f"PatchTST decode expects Ey_pred with shape "
+                f"(B,N,d_model,patch_num), but got {tuple(Ey_pred.shape)}."
+            )
+
+        if Ey_pred.size(2) != self.d_model:
+            raise ValueError(
+                f"PatchTST decode expects hidden dim d_model={self.d_model}, "
+                f"but got {Ey_pred.size(2)}."
+            )
+
+        # Reuse original PatchTST head:
+        # Ey_pred: (B, N, d_model, patch_num)
+        # y:       (B, N, pred_len)
+        y = self.model.head(Ey_pred)
+
+        # Reuse original RevIN denormalization.
+        if self.model.revin:
+            y = self.model.revin_layer(y, torch.tensor(False, dtype=torch.bool))
+
+        # Convert to project convention:
+        # y:      (B, N, pred_len)
+        # y_pred: (B, pred_len, N, 1)
+        y_pred = rearrange(y, "b n t -> b t n")
+        y_pred = y_pred.unsqueeze(-1)
+        return y_pred
+
+    def forward(
+        self,
+        input_seq,
+        input_features=None,
+        target_features=None,
+        target_seq=None,
+        label=None,
+        mode="finetune",
+        *args,
+        **kwargs,
+    ):
+        """
+        mode == "pretrain":
+            Ex      = encode(input_seq) -> (B, N, d_model, patch_num)
+            Ey      = encode(label)     -> (B, N, d_model, patch_num)
+            Ey_pred = predict(Ex)       -> (B, N, d_model, patch_num)
+            return Ey, Ey_pred
+
+        mode == "finetune":
+            Ex      = encode(input_seq) -> (B, N, d_model, patch_num)
+            Ey_pred = predict(Ex)       -> (B, N, d_model, patch_num)
+            y_pred  = decode(Ey_pred)   -> (B, L, N, 1)
+            return y_pred
+        """
+        if label is None:
+            label = target_seq
+
+        if label is None:
+            label = kwargs.get("target_seq", None)
+
+        if mode == "pretrain":
+            if label is None:
+                raise ValueError(
+                    "PatchTST forward(mode='pretrain') requires label or target_seq."
+                )
+
+            Ex = self.encode(input_seq)
+            Ey = self.encode(label)
+            Ey_pred = self.predict(Ex)
+
+            if Ey_pred.shape != Ey.shape:
+                raise RuntimeError(
+                    f"PatchTST JEPA shape mismatch: "
+                    f"Ey_pred.shape={tuple(Ey_pred.shape)} vs Ey.shape={tuple(Ey.shape)}."
+                )
+
+            return Ey, Ey_pred
+
+        if mode == "finetune":
+            Ex = self.encode(input_seq)
+            Ey_pred = self.predict(Ex)
+            y_pred = self.decode(Ey_pred, input_seq=input_seq)
+            return y_pred
+
+        raise ValueError(f"Unsupported mode: {mode}")
