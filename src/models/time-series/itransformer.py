@@ -301,6 +301,18 @@ class iTransformer(BaseModel):
                     f"Ey_pred.shape={tuple(Ey_pred.shape)} vs Ey.shape={tuple(Ey.shape)}."
                 )
 
+            Ey = Ey[:, : self.node_num, :]              # (B, N, d_model)
+            Ey_pred = Ey_pred[:, : self.node_num, :]    # (B, N, d_model)
+
+            Ey = Ey.unsqueeze(1)                        # (B, 1, N, d_model)
+            Ey_pred = Ey_pred.unsqueeze(1)              # (B, 1, N, d_model)
+
+            if Ey_pred.shape != Ey.shape:
+                raise RuntimeError(
+                    f"iTransformer JEPA final shape mismatch: "
+                    f"Ey_pred.shape={tuple(Ey_pred.shape)} vs Ey.shape={tuple(Ey.shape)}."
+                )
+
             return Ey, Ey_pred
 
         if mode == "finetune":
