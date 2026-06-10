@@ -426,6 +426,7 @@ class ModelFactory:
         "DLinear": lambda: NoGraphModelBuilder(),
         "iTransformer": lambda: NoGraphModelBuilder(),
         "FEDformer": lambda: NoGraphModelBuilder(),
+        "Crossformer": lambda: NoGraphModelBuilder(),
     }
 
     @classmethod
