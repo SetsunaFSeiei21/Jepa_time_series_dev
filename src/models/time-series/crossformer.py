@@ -385,7 +385,7 @@ class Crossformer(BaseModel):
 
     def _pack_multiscale(self, enc_list):
         """
-        Pack multi-scale Crossformer representations into one tensor for JEPA loss.
+        Pack multi-scale Crossformer representations into 4D tensor for JEPA loss.
 
         enc_list:
             [
@@ -395,7 +395,7 @@ class Crossformer(BaseModel):
             ]
 
         Return:
-            packed: (B, N, total_feature_dim)
+            packed: (B, total_seg_num, N, d_model)
         """
         if not isinstance(enc_list, (list, tuple)):
             raise ValueError(
@@ -409,9 +409,11 @@ class Crossformer(BaseModel):
                     f"Crossformer scale {idx} expects shape "
                     f"(B,N,seg_num,d_model), but got {tuple(x.shape)}."
                 )
-            chunks.append(x.flatten(start_dim=2))
 
-        return torch.cat(chunks, dim=-1)
+            # (B, N, seg_num, d_model) -> (B, seg_num, N, d_model)
+            chunks.append(x.permute(0, 2, 1, 3).contiguous())
+
+        return torch.cat(chunks, dim=1)
 
     def encode(self, seq, seq_features=None, *args, **kwargs):
         """

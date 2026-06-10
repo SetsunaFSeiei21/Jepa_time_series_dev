@@ -447,7 +447,7 @@ class FEDformer(BaseModel):
                     f"Ey_pred.shape={tuple(Ey_pred.shape)} vs Ey.shape={tuple(Ey.shape)}."
                 )
 
-            return Ey, Ey_pred
+            return Ey.unsqueeze(2), Ey_pred.unsqueeze(2)
 
         if mode == "finetune":
             Ex = self.encode(input_seq, input_features)
