@@ -1,0 +1,10 @@
+- dataset=etth1
+- model=patchtst
+- task=test_task
+- exp=jepa_finetune
+- seed=1
+- exp.max_epochs=1
+- exp.batch_size=1
+- exp.num_workers=8
+- exp.prefetch_factor=2
+- exp.pretrain_ckpt=/public/home/202411094934/python_project/Spatio-Temporal-Library/test-smoke/2026-06-11/patchtst/pretrain1/etth1/test_task/seed_1/jepa_pretrain_epoch_1.pth
