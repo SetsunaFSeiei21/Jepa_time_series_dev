@@ -62,7 +62,7 @@ def main(cfg: DictConfig):
             "node_num": N_NODE,
             "input_dim": N_FEAT + 1,
             "output_dim": 1,
-            "freq": "5min",
+            # "freq": "5min",
         },
     )
     loss_func = lambda x, y: torch.nn.functional.l1_loss(x, y, reduction="mean")
