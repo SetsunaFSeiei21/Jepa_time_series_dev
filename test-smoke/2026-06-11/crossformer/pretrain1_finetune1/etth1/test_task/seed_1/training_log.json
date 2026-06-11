@@ -9,5 +9,34 @@
   "accumulation_steps": 8,
   "save_freq": 10,
   "save_dir": "/public/home/202411094934/python_project/Spatio-Temporal-Library/test-smoke/2026-06-11/crossformer/pretrain1_finetune1/etth1/test_task/seed_1",
-  "epoch_logs": {}
+  "epoch_logs": {
+    "1": {
+      "timestamp": "2026-06-11T15:48:46.754219",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 1.7188830514125686,
+        "time_seconds": 559.4122641086578,
+        "memory_reserved_mb": 48.0,
+        "memory_allocated_mb": 26.24365234375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 2.101187674914257,
+          "RMSE": 3.198852913256499
+        },
+        "time_seconds": 51.635693073272705,
+        "memory_reserved_mb": 48.0,
+        "memory_allocated_mb": 26.24365234375
+      }
+    },
+    "test": {
+      "metrics": {
+        "MAE": 1.7043713165083851,
+        "RMSE": 3.1845313133504054
+      },
+      "time_seconds": 51.35052418708801,
+      "memory_reserved_mb": 48.0,
+      "memory_allocated_mb": 26.43359375
+    }
+  }
 }
