@@ -1,1 +1,33 @@
 _target_: 'src.models.time-series.patchtst.PatchTST'
+
+# PatchTST encoder
+n_layers: 2
+n_heads: 8
+d_model: 64
+d_ff: 128
+
+# Dropout
+dropout: 0.05
+attn_dropout: 0.0
+
+# Patching
+patch_len: 8
+stride: 4
+padding_patch: true
+
+# Normalization / head
+revin: false
+affine: false
+individual: true
+subtract_last: false
+
+# Decomposition
+decomposition: false
+kernel_size: 5
+
+# Transformer details
+activation: gelu
+norm: BatchNorm
+pre_norm: false
+res_attention: true
+store_attn: false
