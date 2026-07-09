@@ -196,6 +196,8 @@ class MAEPretrainEngine(BaseEngine):
             # ------------------------------------------------------------
             input_norm = self.scalar.fit_transform(input_seq)
 
+            finite_mask = torch.isfinite(input_norm)
+
             input_norm = torch.nan_to_num(
                 input_norm,
                 nan=0.0,
@@ -203,7 +205,7 @@ class MAEPretrainEngine(BaseEngine):
                 neginf=0.0,
             )
 
-            valid_mask = (~original_invalid_mask) & torch.isfinite(input_norm)
+            valid_mask = (~original_invalid_mask) & finite_mask
 
             if valid_mask.sum().item() == 0:
                 self.logger.warning(
