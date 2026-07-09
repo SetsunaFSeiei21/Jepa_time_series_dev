@@ -1,0 +1,47 @@
+meta_path: /public/home/202411094934/python_project/Spatio-Temporal-Library/data/STFM-datasets/
+seed: 0
+dataset:
+  name: ETTh1
+  format: presplit
+  data_root: /public/home/202411094934/python_project/Spatio-Temporal-Library/data/time-series-dataset
+  use_dataset_norm: true
+  timestamp_dim: 4
+  has_graph: false
+model:
+  _target_: src.models.time-series.autoformer.Autoformer
+  d_model: 64
+  embed: timeF
+  freq: h
+  dropout: 0.1
+  activation: relu
+  e_layers: 2
+  d_layers: 2
+  n_heads: 4
+  d_ff: 128
+  factor: 3
+  moving_avg: 25
+task:
+  his_len: 128
+  pred_len: 128
+  patch_len: 24
+  stride: 12
+  moving_avg: 25
+exp:
+  batch_size: 1
+  device_id: 0
+  num_workers: 1
+  prefetch_factor: 8
+  max_epochs: 10
+  lr: 0.0005
+  weight_decay: 0.0001
+  milestones:
+  - 10
+  - 20
+  - 30
+  - 40
+  gamma: 0.5
+  clip_grad_value: 5
+  accumulation_steps: 8
+  save_freq: 10
+  model_param_filename: model_parameters.pt
+  pretrain_ckpt: /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/pretrain10/etth1/time-series/seed_0/jepa_pretrain_epoch_10.pth

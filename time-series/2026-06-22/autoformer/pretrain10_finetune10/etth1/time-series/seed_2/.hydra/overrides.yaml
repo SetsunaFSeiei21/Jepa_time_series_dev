@@ -1,0 +1,8 @@
+- dataset=etth1
+- model=autoformer
+- task=time-series
+- exp=jepa_finetune
+- seed=2
+- exp.max_epochs=10
+- exp.num_workers=1
+- exp.pretrain_ckpt=/public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/pretrain10/etth1/time-series/seed_2/jepa_pretrain_epoch_10.pth

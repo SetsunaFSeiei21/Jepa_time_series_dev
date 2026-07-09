@@ -1,0 +1,626 @@
+2026-06-22 17:36:10 - finetune_logger - INFO - No pretrained checkpoint is provided. Finetuning from scratch.
+[2026-06-22 17:36:10,799][finetune_logger][INFO] - No pretrained checkpoint is provided. Finetuning from scratch.
+2026-06-22 17:36:10 - finetune_logger - INFO - Model parameters: 188,487
+[2026-06-22 17:36:10,806][finetune_logger][INFO] - Model parameters: 188,487
+2026-06-22 17:36:10 - finetune_logger - INFO - Created new log file at /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 17:36:10,809][finetune_logger][INFO] - Created new log file at /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 17:36:10 - finetune_logger - INFO - Starting training...
+[2026-06-22 17:36:10,809][finetune_logger][INFO] - Starting training...
+2026-06-22 17:36:10 - finetune_logger - INFO - Epoch 1/20
+[2026-06-22 17:36:10,809][finetune_logger][INFO] - Epoch 1/20
+2026-06-22 18:17:58 - finetune_logger - INFO - Train loss: 1.4108375314303252
+[2026-06-22 18:17:58,051][finetune_logger][INFO] - Train loss: 1.4108375314303252
+2026-06-22 18:17:58 - finetune_logger - INFO - Train time: 2507.241284132004s
+[2026-06-22 18:17:58,051][finetune_logger][INFO] - Train time: 2507.241284132004s
+2026-06-22 18:17:58 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-22 18:17:58,051][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-22 18:17:58 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-22 18:17:58,051][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-22 18:17:58 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-22 18:17:58,051][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-22 18:22:51 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7471490122612603, 'RMSE': 2.855244907081991}
+[2026-06-22 18:22:51,493][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7471490122612603, 'RMSE': 2.855244907081991}
+2026-06-22 18:22:51 - finetune_logger - INFO - Val time: 293.44s
+[2026-06-22 18:22:51,494][finetune_logger][INFO] - Val time: 293.44s
+2026-06-22 18:22:51 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-22 18:22:51,494][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-22 18:22:51 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-22 18:22:51,494][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-22 18:22:51 - finetune_logger - INFO - Logged epoch 1 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 18:22:51,498][finetune_logger][INFO] - Logged epoch 1 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 18:22:51 - finetune_logger - INFO - New best model! Val loss: 1.747149
+[2026-06-22 18:22:51,498][finetune_logger][INFO] - New best model! Val loss: 1.747149
+2026-06-22 18:27:45 - finetune_logger - INFO - Test metrics: {'MAE': 1.5775545347599287, 'RMSE': 2.76766791670152}
+[2026-06-22 18:27:45,211][finetune_logger][INFO] - Test metrics: {'MAE': 1.5775545347599287, 'RMSE': 2.76766791670152}
+2026-06-22 18:27:45 - finetune_logger - INFO - Test time: 293.66s
+[2026-06-22 18:27:45,211][finetune_logger][INFO] - Test time: 293.66s
+2026-06-22 18:27:45 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-22 18:27:45,211][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-22 18:27:45 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-22 18:27:45,211][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-22 18:27:45 - finetune_logger - INFO - Epoch 2/20
+[2026-06-22 18:27:45,211][finetune_logger][INFO] - Epoch 2/20
+2026-06-22 19:09:43 - finetune_logger - INFO - Train loss: 1.2818434709597883
+[2026-06-22 19:09:43,403][finetune_logger][INFO] - Train loss: 1.2818434709597883
+2026-06-22 19:09:43 - finetune_logger - INFO - Train time: 2518.1909613609314s
+[2026-06-22 19:09:43,403][finetune_logger][INFO] - Train time: 2518.1909613609314s
+2026-06-22 19:09:43 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-22 19:09:43,403][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-22 19:09:43 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-22 19:09:43,403][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-22 19:09:43 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-22 19:09:43,403][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-22 19:14:37 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7889762852544326, 'RMSE': 2.868214712288987}
+[2026-06-22 19:14:37,914][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7889762852544326, 'RMSE': 2.868214712288987}
+2026-06-22 19:14:37 - finetune_logger - INFO - Val time: 294.51s
+[2026-06-22 19:14:37,914][finetune_logger][INFO] - Val time: 294.51s
+2026-06-22 19:14:37 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-22 19:14:37,914][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-22 19:14:37 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-22 19:14:37,915][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-22 19:14:37 - finetune_logger - INFO - Logged epoch 2 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 19:14:37,918][finetune_logger][INFO] - Logged epoch 2 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 19:19:33 - finetune_logger - INFO - Test metrics: {'MAE': 1.6199251360381015, 'RMSE': 2.782168853187679}
+[2026-06-22 19:19:33,508][finetune_logger][INFO] - Test metrics: {'MAE': 1.6199251360381015, 'RMSE': 2.782168853187679}
+2026-06-22 19:19:33 - finetune_logger - INFO - Test time: 295.59s
+[2026-06-22 19:19:33,509][finetune_logger][INFO] - Test time: 295.59s
+2026-06-22 19:19:33 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-22 19:19:33,509][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-22 19:19:33 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-22 19:19:33,509][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-22 19:19:33 - finetune_logger - INFO - Epoch 3/20
+[2026-06-22 19:19:33,509][finetune_logger][INFO] - Epoch 3/20
+2026-06-22 20:01:32 - finetune_logger - INFO - Train loss: 1.2047660448941802
+[2026-06-22 20:01:32,243][finetune_logger][INFO] - Train loss: 1.2047660448941802
+2026-06-22 20:01:32 - finetune_logger - INFO - Train time: 2518.733471632004s
+[2026-06-22 20:01:32,243][finetune_logger][INFO] - Train time: 2518.733471632004s
+2026-06-22 20:01:32 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-22 20:01:32,244][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-22 20:01:32 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-22 20:01:32,244][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-22 20:01:32 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-22 20:01:32,244][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-22 20:06:26 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7774809791308488, 'RMSE': 2.867150707759174}
+[2026-06-22 20:06:26,763][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7774809791308488, 'RMSE': 2.867150707759174}
+2026-06-22 20:06:26 - finetune_logger - INFO - Val time: 294.52s
+[2026-06-22 20:06:26,763][finetune_logger][INFO] - Val time: 294.52s
+2026-06-22 20:06:26 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-22 20:06:26,763][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-22 20:06:26 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-22 20:06:26,764][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-22 20:06:26 - finetune_logger - INFO - Logged epoch 3 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 20:06:26,767][finetune_logger][INFO] - Logged epoch 3 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 20:11:21 - finetune_logger - INFO - Test metrics: {'MAE': 1.5724484131434577, 'RMSE': 2.723541946364573}
+[2026-06-22 20:11:21,017][finetune_logger][INFO] - Test metrics: {'MAE': 1.5724484131434577, 'RMSE': 2.723541946364573}
+2026-06-22 20:11:21 - finetune_logger - INFO - Test time: 294.25s
+[2026-06-22 20:11:21,018][finetune_logger][INFO] - Test time: 294.25s
+2026-06-22 20:11:21 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-22 20:11:21,018][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-22 20:11:21 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-22 20:11:21,018][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-22 20:11:21 - finetune_logger - INFO - Epoch 4/20
+[2026-06-22 20:11:21,018][finetune_logger][INFO] - Epoch 4/20
+2026-06-22 20:53:18 - finetune_logger - INFO - Train loss: 1.1428813341137822
+[2026-06-22 20:53:18,117][finetune_logger][INFO] - Train loss: 1.1428813341137822
+2026-06-22 20:53:18 - finetune_logger - INFO - Train time: 2517.0987277030945s
+[2026-06-22 20:53:18,118][finetune_logger][INFO] - Train time: 2517.0987277030945s
+2026-06-22 20:53:18 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-22 20:53:18,118][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-22 20:53:18 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-22 20:53:18,118][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-22 20:53:18 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-22 20:53:18,118][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-22 20:58:12 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7866018413544948, 'RMSE': 2.8989810182738087}
+[2026-06-22 20:58:12,733][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7866018413544948, 'RMSE': 2.8989810182738087}
+2026-06-22 20:58:12 - finetune_logger - INFO - Val time: 294.61s
+[2026-06-22 20:58:12,733][finetune_logger][INFO] - Val time: 294.61s
+2026-06-22 20:58:12 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-22 20:58:12,733][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-22 20:58:12 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-22 20:58:12,733][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-22 20:58:12 - finetune_logger - INFO - Logged epoch 4 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 20:58:12,737][finetune_logger][INFO] - Logged epoch 4 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 21:03:07 - finetune_logger - INFO - Test metrics: {'MAE': 1.6192346197522811, 'RMSE': 2.777538212230342}
+[2026-06-22 21:03:07,792][finetune_logger][INFO] - Test metrics: {'MAE': 1.6192346197522811, 'RMSE': 2.777538212230342}
+2026-06-22 21:03:07 - finetune_logger - INFO - Test time: 295.05s
+[2026-06-22 21:03:07,792][finetune_logger][INFO] - Test time: 295.05s
+2026-06-22 21:03:07 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-22 21:03:07,792][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-22 21:03:07 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-22 21:03:07,793][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-22 21:03:07 - finetune_logger - INFO - Epoch 5/20
+[2026-06-22 21:03:07,793][finetune_logger][INFO] - Epoch 5/20
+2026-06-22 21:45:04 - finetune_logger - INFO - Train loss: 1.091874872109167
+[2026-06-22 21:45:04,287][finetune_logger][INFO] - Train loss: 1.091874872109167
+2026-06-22 21:45:04 - finetune_logger - INFO - Train time: 2516.493818759918s
+[2026-06-22 21:45:04,287][finetune_logger][INFO] - Train time: 2516.493818759918s
+2026-06-22 21:45:04 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-22 21:45:04,287][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-22 21:45:04 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-22 21:45:04,288][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-22 21:45:04 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-22 21:45:04,288][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-22 21:49:58 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7937223124546484, 'RMSE': 2.8757329026064196}
+[2026-06-22 21:49:58,137][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7937223124546484, 'RMSE': 2.8757329026064196}
+2026-06-22 21:49:58 - finetune_logger - INFO - Val time: 293.85s
+[2026-06-22 21:49:58,138][finetune_logger][INFO] - Val time: 293.85s
+2026-06-22 21:49:58 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-22 21:49:58,138][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-22 21:49:58 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-22 21:49:58,138][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-22 21:49:58 - finetune_logger - INFO - Logged epoch 5 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 21:49:58,140][finetune_logger][INFO] - Logged epoch 5 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 21:54:52 - finetune_logger - INFO - Test metrics: {'MAE': 1.6110159961001513, 'RMSE': 2.7674969039701978}
+[2026-06-22 21:54:52,345][finetune_logger][INFO] - Test metrics: {'MAE': 1.6110159961001513, 'RMSE': 2.7674969039701978}
+2026-06-22 21:54:52 - finetune_logger - INFO - Test time: 294.20s
+[2026-06-22 21:54:52,345][finetune_logger][INFO] - Test time: 294.20s
+2026-06-22 21:54:52 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-22 21:54:52,345][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-22 21:54:52 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-22 21:54:52,345][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-22 21:54:52 - finetune_logger - INFO - Epoch 6/20
+[2026-06-22 21:54:52,346][finetune_logger][INFO] - Epoch 6/20
+2026-06-22 22:36:50 - finetune_logger - INFO - Train loss: 1.0493584102365248
+[2026-06-22 22:36:50,518][finetune_logger][INFO] - Train loss: 1.0493584102365248
+2026-06-22 22:36:50 - finetune_logger - INFO - Train time: 2518.172300338745s
+[2026-06-22 22:36:50,519][finetune_logger][INFO] - Train time: 2518.172300338745s
+2026-06-22 22:36:50 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-22 22:36:50,519][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-22 22:36:50 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-22 22:36:50,519][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-22 22:36:50 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-22 22:36:50,519][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-22 22:41:44 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8145613221343353, 'RMSE': 2.9171535596072924}
+[2026-06-22 22:41:44,339][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8145613221343353, 'RMSE': 2.9171535596072924}
+2026-06-22 22:41:44 - finetune_logger - INFO - Val time: 293.82s
+[2026-06-22 22:41:44,339][finetune_logger][INFO] - Val time: 293.82s
+2026-06-22 22:41:44 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-22 22:41:44,339][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-22 22:41:44 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-22 22:41:44,339][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-22 22:41:44 - finetune_logger - INFO - Logged epoch 6 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 22:41:44,342][finetune_logger][INFO] - Logged epoch 6 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 22:46:39 - finetune_logger - INFO - Test metrics: {'MAE': 1.624639969765219, 'RMSE': 2.795303972070102}
+[2026-06-22 22:46:39,095][finetune_logger][INFO] - Test metrics: {'MAE': 1.624639969765219, 'RMSE': 2.795303972070102}
+2026-06-22 22:46:39 - finetune_logger - INFO - Test time: 294.75s
+[2026-06-22 22:46:39,095][finetune_logger][INFO] - Test time: 294.75s
+2026-06-22 22:46:39 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-22 22:46:39,096][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-22 22:46:39 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-22 22:46:39,096][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-22 22:46:39 - finetune_logger - INFO - Epoch 7/20
+[2026-06-22 22:46:39,096][finetune_logger][INFO] - Epoch 7/20
+2026-06-22 23:28:34 - finetune_logger - INFO - Train loss: 1.0113407050133185
+[2026-06-22 23:28:34,625][finetune_logger][INFO] - Train loss: 1.0113407050133185
+2026-06-22 23:28:34 - finetune_logger - INFO - Train time: 2515.528065443039s
+[2026-06-22 23:28:34,625][finetune_logger][INFO] - Train time: 2515.528065443039s
+2026-06-22 23:28:34 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-22 23:28:34,625][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-22 23:28:34 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-22 23:28:34,625][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-22 23:28:34 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-22 23:28:34,625][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-22 23:33:29 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8148976059897577, 'RMSE': 2.9124294226771608}
+[2026-06-22 23:33:29,986][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8148976059897577, 'RMSE': 2.9124294226771608}
+2026-06-22 23:33:29 - finetune_logger - INFO - Val time: 295.36s
+[2026-06-22 23:33:29,986][finetune_logger][INFO] - Val time: 295.36s
+2026-06-22 23:33:29 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-22 23:33:29,987][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-22 23:33:29 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-22 23:33:29,987][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-22 23:33:29 - finetune_logger - INFO - Logged epoch 7 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-22 23:33:29,991][finetune_logger][INFO] - Logged epoch 7 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-22 23:38:24 - finetune_logger - INFO - Test metrics: {'MAE': 1.6051906419128346, 'RMSE': 2.7606932089268605}
+[2026-06-22 23:38:24,822][finetune_logger][INFO] - Test metrics: {'MAE': 1.6051906419128346, 'RMSE': 2.7606932089268605}
+2026-06-22 23:38:24 - finetune_logger - INFO - Test time: 294.83s
+[2026-06-22 23:38:24,823][finetune_logger][INFO] - Test time: 294.83s
+2026-06-22 23:38:24 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-22 23:38:24,823][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-22 23:38:24 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-22 23:38:24,823][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-22 23:38:24 - finetune_logger - INFO - Epoch 8/20
+[2026-06-22 23:38:24,823][finetune_logger][INFO] - Epoch 8/20
+2026-06-23 00:20:22 - finetune_logger - INFO - Train loss: 0.9833353997831845
+[2026-06-23 00:20:22,093][finetune_logger][INFO] - Train loss: 0.9833353997831845
+2026-06-23 00:20:22 - finetune_logger - INFO - Train time: 2517.269215106964s
+[2026-06-23 00:20:22,093][finetune_logger][INFO] - Train time: 2517.269215106964s
+2026-06-23 00:20:22 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 00:20:22,093][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 00:20:22 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 00:20:22,093][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 00:20:22 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-23 00:20:22,093][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-23 00:25:15 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7736416556176, 'RMSE': 2.8437356576356447}
+[2026-06-23 00:25:15,735][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7736416556176, 'RMSE': 2.8437356576356447}
+2026-06-23 00:25:15 - finetune_logger - INFO - Val time: 293.64s
+[2026-06-23 00:25:15,735][finetune_logger][INFO] - Val time: 293.64s
+2026-06-23 00:25:15 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 00:25:15,735][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 00:25:15 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 00:25:15,735][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 00:25:15 - finetune_logger - INFO - Logged epoch 8 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 00:25:15,738][finetune_logger][INFO] - Logged epoch 8 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 00:30:10 - finetune_logger - INFO - Test metrics: {'MAE': 1.5846157134875574, 'RMSE': 2.705517853205869}
+[2026-06-23 00:30:10,544][finetune_logger][INFO] - Test metrics: {'MAE': 1.5846157134875574, 'RMSE': 2.705517853205869}
+2026-06-23 00:30:10 - finetune_logger - INFO - Test time: 294.80s
+[2026-06-23 00:30:10,544][finetune_logger][INFO] - Test time: 294.80s
+2026-06-23 00:30:10 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 00:30:10,544][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 00:30:10 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 00:30:10,544][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 00:30:10 - finetune_logger - INFO - Epoch 9/20
+[2026-06-23 00:30:10,545][finetune_logger][INFO] - Epoch 9/20
+2026-06-23 01:12:08 - finetune_logger - INFO - Train loss: 0.961637367218434
+[2026-06-23 01:12:08,134][finetune_logger][INFO] - Train loss: 0.961637367218434
+2026-06-23 01:12:08 - finetune_logger - INFO - Train time: 2517.5890777111053s
+[2026-06-23 01:12:08,135][finetune_logger][INFO] - Train time: 2517.5890777111053s
+2026-06-23 01:12:08 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 01:12:08,135][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 01:12:08 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 01:12:08,135][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 01:12:08 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-23 01:12:08,135][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-23 01:17:02 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8105120491410027, 'RMSE': 2.922675664716967}
+[2026-06-23 01:17:02,580][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8105120491410027, 'RMSE': 2.922675664716967}
+2026-06-23 01:17:02 - finetune_logger - INFO - Val time: 294.44s
+[2026-06-23 01:17:02,580][finetune_logger][INFO] - Val time: 294.44s
+2026-06-23 01:17:02 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 01:17:02,580][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 01:17:02 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 01:17:02,580][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 01:17:02 - finetune_logger - INFO - Logged epoch 9 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 01:17:02,583][finetune_logger][INFO] - Logged epoch 9 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 01:21:57 - finetune_logger - INFO - Test metrics: {'MAE': 1.602197376252065, 'RMSE': 2.755055705478765}
+[2026-06-23 01:21:57,066][finetune_logger][INFO] - Test metrics: {'MAE': 1.602197376252065, 'RMSE': 2.755055705478765}
+2026-06-23 01:21:57 - finetune_logger - INFO - Test time: 294.48s
+[2026-06-23 01:21:57,067][finetune_logger][INFO] - Test time: 294.48s
+2026-06-23 01:21:57 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 01:21:57,067][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 01:21:57 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 01:21:57,067][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 01:21:57 - finetune_logger - INFO - Epoch 10/20
+[2026-06-23 01:21:57,067][finetune_logger][INFO] - Epoch 10/20
+2026-06-23 02:03:53 - finetune_logger - INFO - Train loss: 0.942513563389365
+[2026-06-23 02:03:53,975][finetune_logger][INFO] - Train loss: 0.942513563389365
+2026-06-23 02:03:53 - finetune_logger - INFO - Train time: 2516.9074790477753s
+[2026-06-23 02:03:53,975][finetune_logger][INFO] - Train time: 2516.9074790477753s
+2026-06-23 02:03:53 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 02:03:53,975][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 02:03:53 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 02:03:53,976][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 02:03:53 - finetune_logger - INFO - Current learning rate: 0.0005
+[2026-06-23 02:03:53,976][finetune_logger][INFO] - Current learning rate: 0.0005
+2026-06-23 02:08:48 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8250664579672546, 'RMSE': 2.944296886991846}
+[2026-06-23 02:08:48,468][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8250664579672546, 'RMSE': 2.944296886991846}
+2026-06-23 02:08:48 - finetune_logger - INFO - Val time: 294.49s
+[2026-06-23 02:08:48,469][finetune_logger][INFO] - Val time: 294.49s
+2026-06-23 02:08:48 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 02:08:48,469][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 02:08:48 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 02:08:48,469][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 02:08:48 - finetune_logger - INFO - Logged epoch 10 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 02:08:48,472][finetune_logger][INFO] - Logged epoch 10 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 02:13:43 - finetune_logger - INFO - Test metrics: {'MAE': 1.6124857259124754, 'RMSE': 2.7789961310264637}
+[2026-06-23 02:13:43,861][finetune_logger][INFO] - Test metrics: {'MAE': 1.6124857259124754, 'RMSE': 2.7789961310264637}
+2026-06-23 02:13:43 - finetune_logger - INFO - Test time: 295.36s
+[2026-06-23 02:13:43,861][finetune_logger][INFO] - Test time: 295.36s
+2026-06-23 02:13:43 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 02:13:43,861][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 02:13:43 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 02:13:43,861][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 02:13:43 - finetune_logger - INFO - Epoch 11/20
+[2026-06-23 02:13:43,861][finetune_logger][INFO] - Epoch 11/20
+2026-06-23 02:55:42 - finetune_logger - INFO - Train loss: 0.8937363817547213
+[2026-06-23 02:55:42,189][finetune_logger][INFO] - Train loss: 0.8937363817547213
+2026-06-23 02:55:42 - finetune_logger - INFO - Train time: 2518.32715344429s
+[2026-06-23 02:55:42,189][finetune_logger][INFO] - Train time: 2518.32715344429s
+2026-06-23 02:55:42 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 02:55:42,190][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 02:55:42 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 02:55:42,190][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 02:55:42 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 02:55:42,190][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 03:00:36 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8278008628039666, 'RMSE': 2.933210647275503}
+[2026-06-23 03:00:36,342][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8278008628039666, 'RMSE': 2.933210647275503}
+2026-06-23 03:00:36 - finetune_logger - INFO - Val time: 294.15s
+[2026-06-23 03:00:36,342][finetune_logger][INFO] - Val time: 294.15s
+2026-06-23 03:00:36 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 03:00:36,342][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 03:00:36 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 03:00:36,342][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 03:00:36 - finetune_logger - INFO - Logged epoch 11 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 03:00:36,346][finetune_logger][INFO] - Logged epoch 11 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 03:05:31 - finetune_logger - INFO - Test metrics: {'MAE': 1.621232144932084, 'RMSE': 2.7807722250461806}
+[2026-06-23 03:05:31,570][finetune_logger][INFO] - Test metrics: {'MAE': 1.621232144932084, 'RMSE': 2.7807722250461806}
+2026-06-23 03:05:31 - finetune_logger - INFO - Test time: 295.22s
+[2026-06-23 03:05:31,571][finetune_logger][INFO] - Test time: 295.22s
+2026-06-23 03:05:31 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 03:05:31,571][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 03:05:31 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 03:05:31,571][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 03:05:31 - finetune_logger - INFO - Epoch 12/20
+[2026-06-23 03:05:31,571][finetune_logger][INFO] - Epoch 12/20
+2026-06-23 03:47:29 - finetune_logger - INFO - Train loss: 0.8826026038688416
+[2026-06-23 03:47:29,136][finetune_logger][INFO] - Train loss: 0.8826026038688416
+2026-06-23 03:47:29 - finetune_logger - INFO - Train time: 2517.563908100128s
+[2026-06-23 03:47:29,136][finetune_logger][INFO] - Train time: 2517.563908100128s
+2026-06-23 03:47:29 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 03:47:29,136][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 03:47:29 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 03:47:29,136][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 03:47:29 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 03:47:29,136][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 03:52:23 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8097228522624524, 'RMSE': 2.915544621001538}
+[2026-06-23 03:52:23,719][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8097228522624524, 'RMSE': 2.915544621001538}
+2026-06-23 03:52:23 - finetune_logger - INFO - Val time: 294.58s
+[2026-06-23 03:52:23,719][finetune_logger][INFO] - Val time: 294.58s
+2026-06-23 03:52:23 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 03:52:23,720][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 03:52:23 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 03:52:23,720][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 03:52:23 - finetune_logger - INFO - Logged epoch 12 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 03:52:23,723][finetune_logger][INFO] - Logged epoch 12 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 03:57:18 - finetune_logger - INFO - Test metrics: {'MAE': 1.5951061275817076, 'RMSE': 2.74511112282132}
+[2026-06-23 03:57:18,521][finetune_logger][INFO] - Test metrics: {'MAE': 1.5951061275817076, 'RMSE': 2.74511112282132}
+2026-06-23 03:57:18 - finetune_logger - INFO - Test time: 294.80s
+[2026-06-23 03:57:18,521][finetune_logger][INFO] - Test time: 294.80s
+2026-06-23 03:57:18 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 03:57:18,521][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 03:57:18 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 03:57:18,521][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 03:57:18 - finetune_logger - INFO - Epoch 13/20
+[2026-06-23 03:57:18,521][finetune_logger][INFO] - Epoch 13/20
+2026-06-23 04:39:16 - finetune_logger - INFO - Train loss: 0.8748213068187184
+[2026-06-23 04:39:16,622][finetune_logger][INFO] - Train loss: 0.8748213068187184
+2026-06-23 04:39:16 - finetune_logger - INFO - Train time: 2518.100210905075s
+[2026-06-23 04:39:16,622][finetune_logger][INFO] - Train time: 2518.100210905075s
+2026-06-23 04:39:16 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 04:39:16,622][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 04:39:16 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 04:39:16,623][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 04:39:16 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 04:39:16,623][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 04:44:11 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7876991167155278, 'RMSE': 2.8638184759387166}
+[2026-06-23 04:44:11,151][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7876991167155278, 'RMSE': 2.8638184759387166}
+2026-06-23 04:44:11 - finetune_logger - INFO - Val time: 294.53s
+[2026-06-23 04:44:11,151][finetune_logger][INFO] - Val time: 294.53s
+2026-06-23 04:44:11 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 04:44:11,151][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 04:44:11 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 04:44:11,151][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 04:44:11 - finetune_logger - INFO - Logged epoch 13 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 04:44:11,154][finetune_logger][INFO] - Logged epoch 13 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 04:49:05 - finetune_logger - INFO - Test metrics: {'MAE': 1.5988626886091435, 'RMSE': 2.7476169579832135}
+[2026-06-23 04:49:05,545][finetune_logger][INFO] - Test metrics: {'MAE': 1.5988626886091435, 'RMSE': 2.7476169579832135}
+2026-06-23 04:49:05 - finetune_logger - INFO - Test time: 294.39s
+[2026-06-23 04:49:05,546][finetune_logger][INFO] - Test time: 294.39s
+2026-06-23 04:49:05 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 04:49:05,546][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 04:49:05 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 04:49:05,546][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 04:49:05 - finetune_logger - INFO - Epoch 14/20
+[2026-06-23 04:49:05,546][finetune_logger][INFO] - Epoch 14/20
+2026-06-23 05:31:03 - finetune_logger - INFO - Train loss: 0.8679053065311444
+[2026-06-23 05:31:03,280][finetune_logger][INFO] - Train loss: 0.8679053065311444
+2026-06-23 05:31:03 - finetune_logger - INFO - Train time: 2517.7331058979034s
+[2026-06-23 05:31:03,280][finetune_logger][INFO] - Train time: 2517.7331058979034s
+2026-06-23 05:31:03 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 05:31:03,280][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 05:31:03 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 05:31:03,281][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 05:31:03 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 05:31:03,281][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 05:35:58 - finetune_logger - INFO - Validation metrics: {'MAE': 1.798773457254779, 'RMSE': 2.904851083802067}
+[2026-06-23 05:35:58,067][finetune_logger][INFO] - Validation metrics: {'MAE': 1.798773457254779, 'RMSE': 2.904851083802067}
+2026-06-23 05:35:58 - finetune_logger - INFO - Val time: 294.79s
+[2026-06-23 05:35:58,067][finetune_logger][INFO] - Val time: 294.79s
+2026-06-23 05:35:58 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 05:35:58,067][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 05:35:58 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 05:35:58,068][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 05:35:58 - finetune_logger - INFO - Logged epoch 14 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 05:35:58,071][finetune_logger][INFO] - Logged epoch 14 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 05:40:53 - finetune_logger - INFO - Test metrics: {'MAE': 1.571387630312166, 'RMSE': 2.705577833616518}
+[2026-06-23 05:40:53,072][finetune_logger][INFO] - Test metrics: {'MAE': 1.571387630312166, 'RMSE': 2.705577833616518}
+2026-06-23 05:40:53 - finetune_logger - INFO - Test time: 295.00s
+[2026-06-23 05:40:53,072][finetune_logger][INFO] - Test time: 295.00s
+2026-06-23 05:40:53 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 05:40:53,072][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 05:40:53 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 05:40:53,072][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 05:40:53 - finetune_logger - INFO - Epoch 15/20
+[2026-06-23 05:40:53,072][finetune_logger][INFO] - Epoch 15/20
+2026-06-23 06:22:47 - finetune_logger - INFO - Train loss: 0.8612455705462894
+[2026-06-23 06:22:47,548][finetune_logger][INFO] - Train loss: 0.8612455705462894
+2026-06-23 06:22:47 - finetune_logger - INFO - Train time: 2514.4752027988434s
+[2026-06-23 06:22:47,549][finetune_logger][INFO] - Train time: 2514.4752027988434s
+2026-06-23 06:22:47 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 06:22:47,549][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 06:22:47 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 06:22:47,549][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 06:22:47 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 06:22:47,549][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 06:27:41 - finetune_logger - INFO - Validation metrics: {'MAE': 1.815215455390484, 'RMSE': 2.9104444629766015}
+[2026-06-23 06:27:41,826][finetune_logger][INFO] - Validation metrics: {'MAE': 1.815215455390484, 'RMSE': 2.9104444629766015}
+2026-06-23 06:27:41 - finetune_logger - INFO - Val time: 294.28s
+[2026-06-23 06:27:41,826][finetune_logger][INFO] - Val time: 294.28s
+2026-06-23 06:27:41 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 06:27:41,826][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 06:27:41 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 06:27:41,826][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 06:27:41 - finetune_logger - INFO - Logged epoch 15 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 06:27:41,829][finetune_logger][INFO] - Logged epoch 15 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 06:32:36 - finetune_logger - INFO - Test metrics: {'MAE': 1.6261863729184451, 'RMSE': 2.775449365036155}
+[2026-06-23 06:32:36,987][finetune_logger][INFO] - Test metrics: {'MAE': 1.6261863729184451, 'RMSE': 2.775449365036155}
+2026-06-23 06:32:36 - finetune_logger - INFO - Test time: 295.16s
+[2026-06-23 06:32:36,988][finetune_logger][INFO] - Test time: 295.16s
+2026-06-23 06:32:36 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 06:32:36,988][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 06:32:36 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 06:32:36,988][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 06:32:36 - finetune_logger - INFO - Epoch 16/20
+[2026-06-23 06:32:36,988][finetune_logger][INFO] - Epoch 16/20
+2026-06-23 07:14:20 - finetune_logger - INFO - Train loss: 0.8560995747363284
+[2026-06-23 07:14:20,433][finetune_logger][INFO] - Train loss: 0.8560995747363284
+2026-06-23 07:14:20 - finetune_logger - INFO - Train time: 2503.4447660446167s
+[2026-06-23 07:14:20,434][finetune_logger][INFO] - Train time: 2503.4447660446167s
+2026-06-23 07:14:20 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 07:14:20,434][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 07:14:20 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 07:14:20,434][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 07:14:20 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 07:14:20,434][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 07:19:15 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7860543454534605, 'RMSE': 2.8622903361618786}
+[2026-06-23 07:19:15,728][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7860543454534605, 'RMSE': 2.8622903361618786}
+2026-06-23 07:19:15 - finetune_logger - INFO - Val time: 295.29s
+[2026-06-23 07:19:15,728][finetune_logger][INFO] - Val time: 295.29s
+2026-06-23 07:19:15 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 07:19:15,728][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 07:19:15 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 07:19:15,729][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 07:19:15 - finetune_logger - INFO - Logged epoch 16 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 07:19:15,732][finetune_logger][INFO] - Logged epoch 16 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 07:24:10 - finetune_logger - INFO - Test metrics: {'MAE': 1.586093311848453, 'RMSE': 2.723191246566271}
+[2026-06-23 07:24:10,687][finetune_logger][INFO] - Test metrics: {'MAE': 1.586093311848453, 'RMSE': 2.723191246566271}
+2026-06-23 07:24:10 - finetune_logger - INFO - Test time: 294.95s
+[2026-06-23 07:24:10,687][finetune_logger][INFO] - Test time: 294.95s
+2026-06-23 07:24:10 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 07:24:10,687][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 07:24:10 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 07:24:10,687][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 07:24:10 - finetune_logger - INFO - Epoch 17/20
+[2026-06-23 07:24:10,687][finetune_logger][INFO] - Epoch 17/20
+2026-06-23 08:06:03 - finetune_logger - INFO - Train loss: 0.8504518287120308
+[2026-06-23 08:06:03,152][finetune_logger][INFO] - Train loss: 0.8504518287120308
+2026-06-23 08:06:03 - finetune_logger - INFO - Train time: 2512.4643008708954s
+[2026-06-23 08:06:03,152][finetune_logger][INFO] - Train time: 2512.4643008708954s
+2026-06-23 08:06:03 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 08:06:03,153][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 08:06:03 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 08:06:03,153][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 08:06:03 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 08:06:03,153][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 08:10:56 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8057155273355407, 'RMSE': 2.917686350870494}
+[2026-06-23 08:10:56,110][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8057155273355407, 'RMSE': 2.917686350870494}
+2026-06-23 08:10:56 - finetune_logger - INFO - Val time: 292.96s
+[2026-06-23 08:10:56,110][finetune_logger][INFO] - Val time: 292.96s
+2026-06-23 08:10:56 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 08:10:56,110][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 08:10:56 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 08:10:56,110][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 08:10:56 - finetune_logger - INFO - Logged epoch 17 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 08:10:56,114][finetune_logger][INFO] - Logged epoch 17 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 08:15:50 - finetune_logger - INFO - Test metrics: {'MAE': 1.5548633586127583, 'RMSE': 2.6829317324541315}
+[2026-06-23 08:15:50,723][finetune_logger][INFO] - Test metrics: {'MAE': 1.5548633586127583, 'RMSE': 2.6829317324541315}
+2026-06-23 08:15:50 - finetune_logger - INFO - Test time: 294.61s
+[2026-06-23 08:15:50,724][finetune_logger][INFO] - Test time: 294.61s
+2026-06-23 08:15:50 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 08:15:50,724][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 08:15:50 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 08:15:50,724][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 08:15:50 - finetune_logger - INFO - Epoch 18/20
+[2026-06-23 08:15:50,724][finetune_logger][INFO] - Epoch 18/20
+2026-06-23 08:57:43 - finetune_logger - INFO - Train loss: 0.8450637475974463
+[2026-06-23 08:57:43,248][finetune_logger][INFO] - Train loss: 0.8450637475974463
+2026-06-23 08:57:43 - finetune_logger - INFO - Train time: 2512.5238513946533s
+[2026-06-23 08:57:43,249][finetune_logger][INFO] - Train time: 2512.5238513946533s
+2026-06-23 08:57:43 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 08:57:43,249][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 08:57:43 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 08:57:43,249][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 08:57:43 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 08:57:43,249][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 09:02:37 - finetune_logger - INFO - Validation metrics: {'MAE': 1.8344376518151693, 'RMSE': 2.9669953764940025}
+[2026-06-23 09:02:37,244][finetune_logger][INFO] - Validation metrics: {'MAE': 1.8344376518151693, 'RMSE': 2.9669953764940025}
+2026-06-23 09:02:37 - finetune_logger - INFO - Val time: 293.99s
+[2026-06-23 09:02:37,245][finetune_logger][INFO] - Val time: 293.99s
+2026-06-23 09:02:37 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 09:02:37,245][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 09:02:37 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 09:02:37,245][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 09:02:37 - finetune_logger - INFO - Logged epoch 18 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 09:02:37,248][finetune_logger][INFO] - Logged epoch 18 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 09:07:31 - finetune_logger - INFO - Test metrics: {'MAE': 1.5949698143729143, 'RMSE': 2.7356812013926057}
+[2026-06-23 09:07:31,847][finetune_logger][INFO] - Test metrics: {'MAE': 1.5949698143729143, 'RMSE': 2.7356812013926057}
+2026-06-23 09:07:31 - finetune_logger - INFO - Test time: 294.60s
+[2026-06-23 09:07:31,848][finetune_logger][INFO] - Test time: 294.60s
+2026-06-23 09:07:31 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 09:07:31,848][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 09:07:31 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 09:07:31,848][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 09:07:31 - finetune_logger - INFO - Epoch 19/20
+[2026-06-23 09:07:31,848][finetune_logger][INFO] - Epoch 19/20
+2026-06-23 09:49:31 - finetune_logger - INFO - Train loss: 0.8397201680542808
+[2026-06-23 09:49:31,610][finetune_logger][INFO] - Train loss: 0.8397201680542808
+2026-06-23 09:49:31 - finetune_logger - INFO - Train time: 2519.7616641521454s
+[2026-06-23 09:49:31,610][finetune_logger][INFO] - Train time: 2519.7616641521454s
+2026-06-23 09:49:31 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 09:49:31,611][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 09:49:31 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 09:49:31,611][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 09:49:31 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 09:49:31,611][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 09:54:26 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7986708341415203, 'RMSE': 2.8912977360112975}
+[2026-06-23 09:54:26,810][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7986708341415203, 'RMSE': 2.8912977360112975}
+2026-06-23 09:54:26 - finetune_logger - INFO - Val time: 295.20s
+[2026-06-23 09:54:26,810][finetune_logger][INFO] - Val time: 295.20s
+2026-06-23 09:54:26 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 09:54:26,810][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 09:54:26 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 09:54:26,810][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 09:54:26 - finetune_logger - INFO - Logged epoch 19 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 09:54:26,814][finetune_logger][INFO] - Logged epoch 19 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 09:59:21 - finetune_logger - INFO - Test metrics: {'MAE': 1.5648846024467948, 'RMSE': 2.6961251280120497}
+[2026-06-23 09:59:21,517][finetune_logger][INFO] - Test metrics: {'MAE': 1.5648846024467948, 'RMSE': 2.6961251280120497}
+2026-06-23 09:59:21 - finetune_logger - INFO - Test time: 294.70s
+[2026-06-23 09:59:21,518][finetune_logger][INFO] - Test time: 294.70s
+2026-06-23 09:59:21 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 09:59:21,518][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 09:59:21 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 09:59:21,518][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 09:59:21 - finetune_logger - INFO - Epoch 20/20
+[2026-06-23 09:59:21,518][finetune_logger][INFO] - Epoch 20/20
+2026-06-23 10:41:18 - finetune_logger - INFO - Train loss: 0.8359692825726814
+[2026-06-23 10:41:18,473][finetune_logger][INFO] - Train loss: 0.8359692825726814
+2026-06-23 10:41:18 - finetune_logger - INFO - Train time: 2516.9537732601166s
+[2026-06-23 10:41:18,473][finetune_logger][INFO] - Train time: 2516.9537732601166s
+2026-06-23 10:41:18 - finetune_logger - INFO - Train memory reserved: 40.00 MB
+[2026-06-23 10:41:18,473][finetune_logger][INFO] - Train memory reserved: 40.00 MB
+2026-06-23 10:41:18 - finetune_logger - INFO - Train memory allocated: 20.88 MB
+[2026-06-23 10:41:18,473][finetune_logger][INFO] - Train memory allocated: 20.88 MB
+2026-06-23 10:41:18 - finetune_logger - INFO - Current learning rate: 0.00025
+[2026-06-23 10:41:18,473][finetune_logger][INFO] - Current learning rate: 0.00025
+2026-06-23 10:46:13 - finetune_logger - INFO - Validation metrics: {'MAE': 1.7894445077610044, 'RMSE': 2.8630947575747085}
+[2026-06-23 10:46:13,116][finetune_logger][INFO] - Validation metrics: {'MAE': 1.7894445077610044, 'RMSE': 2.8630947575747085}
+2026-06-23 10:46:13 - finetune_logger - INFO - Val time: 294.64s
+[2026-06-23 10:46:13,116][finetune_logger][INFO] - Val time: 294.64s
+2026-06-23 10:46:13 - finetune_logger - INFO - Val memory reserved: 40.00 MB
+[2026-06-23 10:46:13,117][finetune_logger][INFO] - Val memory reserved: 40.00 MB
+2026-06-23 10:46:13 - finetune_logger - INFO - Val memory allocated: 20.88 MB
+[2026-06-23 10:46:13,117][finetune_logger][INFO] - Val memory allocated: 20.88 MB
+2026-06-23 10:46:13 - finetune_logger - INFO - Logged epoch 20 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 10:46:13,120][finetune_logger][INFO] - Logged epoch 20 info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+2026-06-23 10:51:08 - finetune_logger - INFO - Test metrics: {'MAE': 1.582057632454973, 'RMSE': 2.6953049693115987}
+[2026-06-23 10:51:08,097][finetune_logger][INFO] - Test metrics: {'MAE': 1.582057632454973, 'RMSE': 2.6953049693115987}
+2026-06-23 10:51:08 - finetune_logger - INFO - Test time: 294.95s
+[2026-06-23 10:51:08,098][finetune_logger][INFO] - Test time: 294.95s
+2026-06-23 10:51:08 - finetune_logger - INFO - Test memory reserved: 40.00 MB
+[2026-06-23 10:51:08,098][finetune_logger][INFO] - Test memory reserved: 40.00 MB
+2026-06-23 10:51:08 - finetune_logger - INFO - Test memory allocated: 20.88 MB
+[2026-06-23 10:51:08,098][finetune_logger][INFO] - Test memory allocated: 20.88 MB
+2026-06-23 10:51:08 - finetune_logger - INFO - Training completed. Best epoch: 1, Best val loss: 1.747149
+[2026-06-23 10:51:08,098][finetune_logger][INFO] - Training completed. Best epoch: 1, Best val loss: 1.747149
+2026-06-23 10:51:08 - finetune_logger - INFO - Loaded checkpoint from epoch 1
+[2026-06-23 10:51:08,144][finetune_logger][INFO] - Loaded checkpoint from epoch 1
+2026-06-23 10:51:08 - finetune_logger - INFO - Evaluating best model on test sets...
+[2026-06-23 10:51:08,144][finetune_logger][INFO] - Evaluating best model on test sets...
+2026-06-23 10:56:03 - finetune_logger - INFO - Test metrics: {'MAE': 1.5775545347599287, 'RMSE': 2.76766791670152}
+[2026-06-23 10:56:03,957][finetune_logger][INFO] - Test metrics: {'MAE': 1.5775545347599287, 'RMSE': 2.76766791670152}
+2026-06-23 10:56:03 - finetune_logger - INFO - Test time: 295.81s
+[2026-06-23 10:56:03,958][finetune_logger][INFO] - Test time: 295.81s
+2026-06-23 10:56:03 - finetune_logger - INFO - Test memory reserved: 60.00 MB
+[2026-06-23 10:56:03,958][finetune_logger][INFO] - Test memory reserved: 60.00 MB
+2026-06-23 10:56:03 - finetune_logger - INFO - Test memory allocated: 20.91 MB
+[2026-06-23 10:56:03,958][finetune_logger][INFO] - Test memory allocated: 20.91 MB
+2026-06-23 10:56:03 - finetune_logger - INFO - Logged epoch test info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json
+[2026-06-23 10:56:03,961][finetune_logger][INFO] - Logged epoch test info to /public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-22/autoformer/finetune20/ettm1/time-series/seed_1/training_log.json

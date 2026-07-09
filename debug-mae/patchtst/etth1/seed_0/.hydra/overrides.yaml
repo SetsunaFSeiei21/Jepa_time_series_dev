@@ -1,0 +1,8 @@
+- dataset=etth1
+- model=patchtst
+- task=time-series
+- exp=mae_pretrain
+- seed=0
+- exp.max_epochs=1
+- exp.save_freq=1
+- exp.num_workers=8

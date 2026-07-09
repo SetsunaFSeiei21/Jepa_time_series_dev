@@ -1,0 +1,8 @@
+- dataset=traffic
+- model=itransformer
+- task=time-series
+- exp=jepa_finetune
+- seed=2
+- exp.max_epochs=20
+- exp.num_workers=8
+- exp.pretrain_ckpt=""

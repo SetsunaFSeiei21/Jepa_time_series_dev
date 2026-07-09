@@ -1,0 +1,24 @@
+batch_size: 1
+device_id: 0
+num_workers: 1
+prefetch_factor: 8
+
+max_epochs: 50
+lr: 0.0005
+weight_decay: 0.0001
+milestones: [10, 20, 30, 40]
+gamma: 0.5
+clip_grad_value: 5
+accumulation_steps: 8
+save_freq: 10
+
+train_mode: pretrain
+model_param_filename: "mae_pretrain_parameters.pt"
+
+# MAE-specific config
+mae_mask_ratio: 0.25
+mae_loss_type: "l1"
+
+# Pure MAE: reconstruct from encoder output directly.
+# Keep false first.
+mae_use_predictor: false

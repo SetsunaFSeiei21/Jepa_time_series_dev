@@ -1,0 +1,71 @@
+{
+  "training_start_time": "2026-07-04T07:02:37.342973",
+  "max_epochs": 10,
+  "learning_rate": 0.0005,
+  "weight_decay": 0.0001,
+  "milestones": "[10, 20, 30, 40]",
+  "gamma": 0.5,
+  "clip_grad_value": 5,
+  "accumulation_steps": 8,
+  "save_freq": 10,
+  "save_dir": "/public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-07-03/fedformer/pretrain10_finetune10/weather/time-series/seed_1",
+  "epoch_logs": {
+    "1": {
+      "timestamp": "2026-07-04T11:08:57.711265",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 33.87875415981238,
+        "time_seconds": 14307.236854791641,
+        "memory_reserved_mb": 66.0,
+        "memory_allocated_mb": 22.93701171875
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 23.709215537932092,
+          "RMSE": 69.45168834080631
+        },
+        "time_seconds": 473.1254241466522,
+        "memory_reserved_mb": 66.0,
+        "memory_allocated_mb": 22.93701171875
+      }
+    },
+    "2": {
+      "timestamp": "2026-07-04T15:35:50.213305",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 29.619645830272276,
+        "time_seconds": 14571.915083408356,
+        "memory_reserved_mb": 66.0,
+        "memory_allocated_mb": 22.93701171875
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 23.3236172198297,
+          "RMSE": 68.41018871943375
+        },
+        "time_seconds": 467.05250239372253,
+        "memory_reserved_mb": 66.0,
+        "memory_allocated_mb": 22.93701171875
+      }
+    },
+    "3": {
+      "timestamp": "2026-07-04T20:02:39.741829",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 28.899667818685636,
+        "time_seconds": 14566.245146751404,
+        "memory_reserved_mb": 66.0,
+        "memory_allocated_mb": 22.93701171875
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 23.569677063607607,
+          "RMSE": 68.94545910298544
+        },
+        "time_seconds": 472.36437010765076,
+        "memory_reserved_mb": 66.0,
+        "memory_allocated_mb": 22.93701171875
+      }
+    }
+  }
+}

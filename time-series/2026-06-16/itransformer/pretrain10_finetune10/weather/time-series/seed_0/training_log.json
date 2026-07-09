@@ -1,0 +1,213 @@
+{
+  "training_start_time": "2026-06-16T02:43:44.695804",
+  "max_epochs": 10,
+  "learning_rate": 0.0005,
+  "weight_decay": 0.0001,
+  "milestones": "[10, 20, 30, 40]",
+  "gamma": 0.5,
+  "clip_grad_value": 5,
+  "accumulation_steps": 8,
+  "save_freq": 10,
+  "save_dir": "/public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-16/itransformer/pretrain10_finetune10/weather/time-series/seed_0",
+  "epoch_logs": {
+    "1": {
+      "timestamp": "2026-06-16T11:17:36.900136",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 25.5102641199401,
+        "time_seconds": 559.3939247131348,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 22.323295724215917,
+          "RMSE": 72.73019480885938
+        },
+        "time_seconds": 32.8649787902832,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "2": {
+      "timestamp": "2026-06-16T11:28:36.568468",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 22.49165736586273,
+        "time_seconds": 559.9466054439545,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 22.682628001451572,
+          "RMSE": 75.40815702072328
+        },
+        "time_seconds": 32.939860343933105,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "3": {
+      "timestamp": "2026-06-16T11:39:35.448572",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 21.638768024477155,
+        "time_seconds": 559.1914975643158,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 22.711421051679554,
+          "RMSE": 75.08178595788964
+        },
+        "time_seconds": 33.06732392311096,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "4": {
+      "timestamp": "2026-06-16T11:50:34.786938",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 21.11077558155331,
+        "time_seconds": 559.2301642894745,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 22.122911013879648,
+          "RMSE": 73.44554323973189
+        },
+        "time_seconds": 33.01797413825989,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "5": {
+      "timestamp": "2026-06-16T12:01:33.689354",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 20.752457954661445,
+        "time_seconds": 559.25563788414,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 23.05179926537877,
+          "RMSE": 76.45116587487833
+        },
+        "time_seconds": 32.881622314453125,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "6": {
+      "timestamp": "2026-06-16T12:12:33.138357",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 20.420468514892146,
+        "time_seconds": 559.7353949546814,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 21.53105980882995,
+          "RMSE": 71.6858441166827
+        },
+        "time_seconds": 32.8905553817749,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "7": {
+      "timestamp": "2026-06-16T12:23:32.205470",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 20.176089980575544,
+        "time_seconds": 559.4437735080719,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 22.059589954120508,
+          "RMSE": 73.85006625004638
+        },
+        "time_seconds": 32.95612978935242,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "8": {
+      "timestamp": "2026-06-16T12:34:31.561060",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 19.952702782519324,
+        "time_seconds": 559.4720573425293,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 22.451672866613517,
+          "RMSE": 74.76853180197837
+        },
+        "time_seconds": 33.117448568344116,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "9": {
+      "timestamp": "2026-06-16T12:45:30.905395",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 19.78655073786023,
+        "time_seconds": 559.7238011360168,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 22.081579030534822,
+          "RMSE": 73.68677412602896
+        },
+        "time_seconds": 32.9419105052948,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "10": {
+      "timestamp": "2026-06-16T12:56:30.048691",
+      "current_learning_rate": 0.0005,
+      "training": {
+        "loss": 19.587714437633572,
+        "time_seconds": 559.4434270858765,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      },
+      "validation": {
+        "metrics": {
+          "MAE": 21.94609431417794,
+          "RMSE": 73.33927070890044
+        },
+        "time_seconds": 32.993945598602295,
+        "memory_reserved_mb": 26.0,
+        "memory_allocated_mb": 18.1005859375
+      }
+    },
+    "test": {
+      "metrics": {
+        "MAE": 12.120117499820216,
+        "RMSE": 40.76040207993113
+      },
+      "time_seconds": 66.82832622528076,
+      "memory_reserved_mb": 26.0,
+      "memory_allocated_mb": 18.13671875
+    }
+  }
+}

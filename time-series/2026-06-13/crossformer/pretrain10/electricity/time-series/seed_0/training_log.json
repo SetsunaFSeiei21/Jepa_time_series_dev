@@ -1,0 +1,95 @@
+{
+  "training_start_time": "2026-06-13T21:32:05.647480",
+  "mode": "jepa_pretrain",
+  "max_epochs": 10,
+  "learning_rate": 0.0005,
+  "weight_decay": 0.0001,
+  "milestones": "[10, 20, 30, 40]",
+  "gamma": 0.5,
+  "clip_grad_value": 5,
+  "accumulation_steps": 8,
+  "save_freq": 2,
+  "save_dir": "/public/home/202411094934/python_project/Spatio-Temporal-Library/time-series/2026-06-13/crossformer/pretrain10/electricity/time-series/seed_0",
+  "epoch_logs": {
+    "Pretrain 1": {
+      "timestamp": "2026-06-13T21:46:03.366185",
+      "current_learning_rate": 0.0005,
+      "loss": 28.105274297030515,
+      "time_seconds": 837.7151336669922,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 2": {
+      "timestamp": "2026-06-13T21:59:59.515815",
+      "current_learning_rate": 0.0005,
+      "loss": 34.62496004904533,
+      "time_seconds": 836.0781056880951,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 3": {
+      "timestamp": "2026-06-13T22:13:59.397647",
+      "current_learning_rate": 0.0005,
+      "loss": 39.931244853257276,
+      "time_seconds": 839.8778412342072,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 4": {
+      "timestamp": "2026-06-13T22:28:00.855928",
+      "current_learning_rate": 0.0005,
+      "loss": 43.276293635506235,
+      "time_seconds": 841.3880543708801,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 5": {
+      "timestamp": "2026-06-13T22:42:02.497191",
+      "current_learning_rate": 0.0005,
+      "loss": 45.64574726275083,
+      "time_seconds": 841.5700447559357,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 6": {
+      "timestamp": "2026-06-13T22:56:03.522277",
+      "current_learning_rate": 0.0005,
+      "loss": 46.83889899831864,
+      "time_seconds": 840.9165732860565,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 7": {
+      "timestamp": "2026-06-13T23:10:06.777170",
+      "current_learning_rate": 0.0005,
+      "loss": 47.103189049348494,
+      "time_seconds": 843.2509872913361,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 8": {
+      "timestamp": "2026-06-13T23:24:09.846839",
+      "current_learning_rate": 0.0005,
+      "loss": 47.066260596298925,
+      "time_seconds": 842.9993486404419,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 9": {
+      "timestamp": "2026-06-13T23:38:11.989059",
+      "current_learning_rate": 0.0005,
+      "loss": 46.5941260376117,
+      "time_seconds": 842.1380398273468,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    },
+    "Pretrain 10": {
+      "timestamp": "2026-06-13T23:52:14.606491",
+      "current_learning_rate": 0.0005,
+      "loss": 45.978593937644106,
+      "time_seconds": 842.5471312999725,
+      "memory_reserved_mb": 1434.0,
+      "memory_allocated_mb": 27.78857421875
+    }
+  }
+}
