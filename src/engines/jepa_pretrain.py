@@ -335,35 +335,66 @@ class JEPAPretrainEngine(BaseEngine):
 
         return momentum
 
+    def _format_jepa_embedding(
+        self,
+        model: torch.nn.Module,
+        embedding,
+    ) -> torch.Tensor:
+        """
+        Convert model-specific JEPA representations into a Tensor
+        accepted by JEPASIGRegLoss.
+        """
+
+        # Crossformer returns a multi-scale list.
+        if isinstance(embedding, (list, tuple)):
+            if not hasattr(model, "_pack_multiscale"):
+                raise TypeError(
+                    f"{type(model).__name__} returned a list/tuple embedding "
+                    "but does not implement _pack_multiscale()."
+                )
+
+            embedding = model._pack_multiscale(embedding)
+
+        if not isinstance(embedding, torch.Tensor):
+            raise TypeError(
+                f"Expected JEPA embedding to be a Tensor after formatting, "
+                f"got {type(embedding)}."
+            )
+
+        # iTransformer may append time-feature tokens after node tokens.
+        if type(model).__name__.lower() == "itransformer":
+            embedding = embedding[:, : model.node_num, :]
+
+            # (B, N, D) -> (B, 1, N, D)
+            embedding = embedding.unsqueeze(1)
+
+        return embedding
 
     def _forward_jepa(self, batch: BatchData):
         """
-        JEPA forward with separate online and EMA target encoders.
+        Online encoder:
+            input -> online encoder -> predictor -> Ey_pred
 
-        Online path:
-            input -> online encoder -> Ex -> predictor -> Ey_pred
-
-        Target path:
-            target -> EMA target encoder -> Ey
-
-        Only the online path receives gradients.
+        EMA target encoder:
+            target -> target encoder -> Ey
         """
-        required_methods = ("encode", "predict")
 
-        for method_name in required_methods:
-            if not hasattr(self.model, method_name):
-                raise AttributeError(
-                    f"Online model {type(self.model).__name__} "
-                    f"does not implement {method_name}()."
-                )
+        if not hasattr(self.model, "encode"):
+            raise AttributeError(
+                f"{type(self.model).__name__} does not implement encode()."
+            )
 
-            if not hasattr(self.target_model, method_name):
-                raise AttributeError(
-                    f"Target model {type(self.target_model).__name__} "
-                    f"does not implement {method_name}()."
-                )
+        if not hasattr(self.model, "predict"):
+            raise AttributeError(
+                f"{type(self.model).__name__} does not implement predict()."
+            )
 
-        # Online encoder: receives gradients.
+        if not hasattr(self.target_model, "encode"):
+            raise AttributeError(
+                f"{type(self.target_model).__name__} does not implement encode()."
+            )
+
+        # Online path.
         Ex = self.model.encode(
             batch.input_seq,
             batch.input_features,
@@ -371,12 +402,23 @@ class JEPAPretrainEngine(BaseEngine):
 
         Ey_pred = self.model.predict(Ex)
 
-        # EMA target encoder: no gradients.
+        # EMA target path.
         with torch.no_grad():
             Ey = self.target_model.encode(
                 batch.target_seq,
                 batch.target_features,
             )
+
+        # Handle Crossformer, iTransformer and ordinary Tensor outputs.
+        Ey_pred = self._format_jepa_embedding(
+            self.model,
+            Ey_pred,
+        )
+
+        Ey = self._format_jepa_embedding(
+            self.target_model,
+            Ey,
+        )
 
         if Ey_pred.shape != Ey.shape:
             raise RuntimeError(

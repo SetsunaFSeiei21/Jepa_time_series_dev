@@ -24,11 +24,30 @@ class LoggerFactory:
 
     # Default configurations for different modes
     MODE_CONFIGS = {
-        "train": LoggerConfig(name="training_logger", log_file="training.log"),
-        "inference": LoggerConfig(name="inference_logger", log_file="inference.log"),
-        "pretrain": LoggerConfig(name="pretrain_logger", log_file="pretrain.log"),
-        "finetune": LoggerConfig(name="finetune_logger", log_file="finetune.log"),
-        "mae_pretrain": LoggerConfig(name="mae_pretrain_logger", log_file="mae_pretrain.log"),
+        "train": LoggerConfig(
+            name="training_logger",
+            log_file="training.log",
+        ),
+        "inference": LoggerConfig(
+            name="inference_logger",
+            log_file="inference.log",
+        ),
+        "pretrain": LoggerConfig(
+            name="pretrain_logger",
+            log_file="pretrain.log",
+        ),
+        "finetune": LoggerConfig(
+            name="finetune_logger",
+            log_file="finetune.log",
+        ),
+        "mae_pretrain": LoggerConfig(
+            name="mae_pretrain_logger",
+            log_file="mae_pretrain.log",
+        ),
+        "contrastive_pretrain": LoggerConfig(
+            name="contrastive_pretrain_logger",
+            log_file="contrastive_pretrain.log",
+        ),
     }
 
     # Handler creators mapping
