@@ -35,7 +35,7 @@ echo "[INFO] RUN_MODE = ${RUN_MODE}"
 
 # Smoke test example:
 # DATASETS=(electricity etth1 etth2 ettm1 ettm2 exchange_rate pulse weather traffic)
-DATASETS=(exchange_rate)
+DATASETS=(ettm2)
 TASKS=(time-series)
 SEEDS=(0 1 2)
 
