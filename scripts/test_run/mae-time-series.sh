@@ -6,12 +6,14 @@ cd "${PROJECT_ROOT}"
 
 mkdir -p hpc_logs
 
-DATASETS=(etth1 ettm1 electricity weather)
+# DATASETS=(etth2 ettm2 exchange_rate)
+DATASETS=(etth2 ettm2 exchange_rate)
 TASKS=(time-series)
 SEEDS=(0 1 2)
-MODELS=(patchtst crossformer fedformer)
+# MODELS=(patchtst crossformer fedformer)
+MODELS=(fedformer)
 
-NUM_WORKERS=8
+NUM_WORKERS=2
 
 DATE_TAG=$(date +"%Y-%m-%d")
 ROOT_DIR="mae-time-series/${DATE_TAG}"

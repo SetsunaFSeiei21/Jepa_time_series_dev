@@ -752,7 +752,22 @@ class PatchTST(BaseModel):
             # Note:
             #   This v0 version assumes his_len == pred_len, so Ex and Ey
             #   have the same patch_num after the same PatchTST patching/backbone.
+            # self.d_model = d_model
+            # self.jepa_predictor = nn.Sequential(
+            #     nn.Linear(d_model, d_model),
+            #     nn.GELU(),
+            #     nn.Linear(d_model, d_model),
+            # )
+            
             self.d_model = d_model
+
+            # PatchTST hidden representation:
+            #     (B, N, d_model, patch_num)
+            #
+            # SIGReg should regard d_model as the embedding dimension.
+            # Therefore, the embedding dimension is axis 2 rather than the last axis.
+            self.jepa_feature_dim = 2
+
             self.jepa_predictor = nn.Sequential(
                 nn.Linear(d_model, d_model),
                 nn.GELU(),

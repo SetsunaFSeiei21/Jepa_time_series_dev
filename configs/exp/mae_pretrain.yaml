@@ -16,7 +16,7 @@ train_mode: pretrain
 model_param_filename: "mae_pretrain_parameters.pt"
 
 # MAE-specific config
-mae_mask_ratio: 0.25
+mae_mask_ratio: 0.35
 mae_loss_type: "l1"
 
 # Pure MAE: reconstruct from encoder output directly.
