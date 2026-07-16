@@ -35,15 +35,15 @@ echo "[INFO] RUN_MODE = ${RUN_MODE}"
 
 # Smoke test example:
 # DATASETS=(electricity etth1 etth2 ettm1 ettm2 exchange_rate pulse weather traffic)
-DATASETS=(traffic)
+DATASETS=(exchange_rate)
 TASKS=(time-series)
 SEEDS=(0 1 2)
 
 # MODELS=(crossformer itransformer autoformer fedformer patchtst)
 # crossformer, itransformer, autoformer, patchtst has completed
-MODELS=(fedformer)
+MODELS=(patchtst)
 
-NUM_WORKERS=2
+NUM_WORKERS=1
 
 DATE_TAG=$(date +"%Y-%m-%d")
 ROOT_DIR="time-series/${DATE_TAG}"
