@@ -576,6 +576,12 @@ class JEPAPretrainEngine(BaseEngine):
                 neginf=0.0,
             )
             
+            # ------------------------------------------------------------
+            # Compute current batch spectrum.
+            # ------------------------------------------------------------
+            batch_spectrum = None
+            batch_spectrum_samples = 0
+            
             if hasattr(
                 self.model,
                 "compute_batch_spectrum",
@@ -687,8 +693,6 @@ class JEPAPretrainEngine(BaseEngine):
 
                 # The target branch must use the same C in the next batch.
                 self._sync_spectral_buffers_to_target()
-
-            valid_micro_steps += 1
 
             valid_micro_steps += 1
 

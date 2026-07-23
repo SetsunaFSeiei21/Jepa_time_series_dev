@@ -46,7 +46,7 @@ MODELS=(crossformer)
 NUM_WORKERS=1
 
 DATE_TAG=$(date +"%Y-%m-%d")
-ROOT_DIR="time-series/${DATE_TAG}"
+ROOT_DIR="time-series-result/${DATE_TAG}"
 RUNNER="scripts/test_run/scut_slurm_run.sh"
 
 for model in "${MODELS[@]}"; do
