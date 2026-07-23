@@ -35,13 +35,13 @@ echo "[INFO] RUN_MODE = ${RUN_MODE}"
 
 # Smoke test example:
 # DATASETS=(electricity etth1 etth2 ettm1 ettm2 exchange_rate pulse weather traffic)
-DATASETS=(ettm2)
+DATASETS=(etth2 exchange_rate)
 TASKS=(time-series)
 SEEDS=(0 1 2)
 
 # MODELS=(crossformer itransformer autoformer fedformer patchtst)
 # crossformer, itransformer, autoformer, patchtst has completed
-MODELS=(patchtst)
+MODELS=(crossformer)
 
 NUM_WORKERS=1
 

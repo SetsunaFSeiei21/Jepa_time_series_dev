@@ -334,6 +334,50 @@ class JEPAPretrainEngine(BaseEngine):
         self.ema_step += 1
 
         return momentum
+    
+    @torch.no_grad()
+    def _sync_spectral_buffers_to_target(self):
+        """
+        Keep the online and target spectral contexts identical.
+
+        Spectral buffers are running statistics rather than EMA model
+        parameters, so they should be copied directly.
+        """
+
+        spectral_buffer_names = (
+            "global_spectrum",
+            "spectrum_seen_samples",
+            "last_spectrum_update_norm",
+        )
+
+        if not hasattr(
+            self.model,
+            "global_spectrum",
+        ):
+            return
+
+        for name in spectral_buffer_names:
+            if not hasattr(self.model, name):
+                raise AttributeError(
+                    f"Online model is missing spectral buffer: {name}"
+                )
+
+            if not hasattr(self.target_model, name):
+                raise AttributeError(
+                    f"Target model is missing spectral buffer: {name}"
+                )
+
+            online_buffer = getattr(
+                self.model,
+                name,
+            )
+
+            target_buffer = getattr(
+                self.target_model,
+                name,
+            )
+
+            target_buffer.copy_(online_buffer)
 
     def _format_jepa_embedding(
         self,
@@ -460,6 +504,10 @@ class JEPAPretrainEngine(BaseEngine):
         valid_micro_steps = 0
         last_ema_momentum = self._get_ema_momentum()
 
+        spectrum_update_sum = 0.0
+        spectrum_update_count = 0
+        last_spectrum_update_norm = 0.0
+
         self.optimizer.zero_grad(set_to_none=True)
 
         pbar = tqdm(
@@ -527,7 +575,18 @@ class JEPAPretrainEngine(BaseEngine):
                 posinf=0.0,
                 neginf=0.0,
             )
-
+            
+            if hasattr(
+                self.model,
+                "compute_batch_spectrum",
+            ):
+                (
+                    batch_spectrum,
+                    batch_spectrum_samples,
+                ) = self.model.compute_batch_spectrum(
+                    batch.input_seq
+                )
+                
             # ------------------------------------------------------------
             # 3. Online encoder + EMA target encoder.
             # ------------------------------------------------------------
@@ -598,6 +657,39 @@ class JEPAPretrainEngine(BaseEngine):
             loss_for_backward = loss / current_group_size
             loss_for_backward.backward()
 
+            # ------------------------------------------------------------
+            # Update global spectrum C after the current forward/backward.
+            #
+            # Therefore:
+            #     current batch uses C_{b-1}
+            #     next batch uses C_b
+            # ------------------------------------------------------------
+            if (
+                batch_spectrum is not None
+                and batch_spectrum_samples > 0
+                and hasattr(
+                    self.model,
+                    "update_global_spectrum",
+                )
+            ):
+                last_spectrum_update_norm = (
+                    self.model.update_global_spectrum(
+                        batch_spectrum,
+                        batch_spectrum_samples,
+                    )
+                )
+
+                spectrum_update_sum += (
+                    last_spectrum_update_norm
+                )
+
+                spectrum_update_count += 1
+
+                # The target branch must use the same C in the next batch.
+                self._sync_spectral_buffers_to_target()
+
+            valid_micro_steps += 1
+
             valid_micro_steps += 1
 
             avg_loss = (
@@ -638,8 +730,10 @@ class JEPAPretrainEngine(BaseEngine):
                 f"Align: {loss_dict['loss_align'].item():.4f}, "
                 f"SIGReg: {loss_dict['loss_reg'].item():.4f}, "
                 f"Avg: {avg_loss:.4f}, "
-                f"Accum: {micro_step_in_group}/{current_group_size}, "
-                f"EMA: {last_ema_momentum:.6f}"
+                f"Accum: "
+                f"{micro_step_in_group}/{current_group_size}, "
+                f"EMA: {last_ema_momentum:.6f}, "
+                f"C-delta: {last_spectrum_update_norm:.6e}"
             )
 
         if valid_micro_steps == 0:
@@ -647,6 +741,14 @@ class JEPAPretrainEngine(BaseEngine):
                 "No valid JEPA pretraining batches in this epoch."
             )
             terminate = True
+
+        if spectrum_update_count > 0:
+            self.last_epoch_spectrum_update_mean = (
+                spectrum_update_sum
+                / spectrum_update_count
+            )
+        else:
+            self.last_epoch_spectrum_update_mean = 0.0
 
         return terminate, avg_loss
     
@@ -723,6 +825,27 @@ class JEPAPretrainEngine(BaseEngine):
             current_lr = self.optimizer.param_groups[0]["lr"]
 
             self.logger.info(f"Pretrain loss: {train_loss}")
+            if hasattr(
+                self.model,
+                "get_spectral_diagnostics",
+            ):
+                spectral_diagnostics = (
+                    self.model.get_spectral_diagnostics()
+                )
+
+                self.logger.info(
+                    "Spectral context: "
+                    f"seen_samples="
+                    f"{spectral_diagnostics['seen_samples']}, "
+                    f"last_update_norm="
+                    f"{spectral_diagnostics['last_update_norm']:.8e}, "
+                    f"epoch_mean_update_norm="
+                    f"{self.last_epoch_spectrum_update_mean:.8e}, "
+                    f"context_gate="
+                    f"{spectral_diagnostics['context_gate']:.6f}, "
+                    f"spectrum_norm="
+                    f"{spectral_diagnostics['spectrum_norm']:.6f}"
+                )
             self.logger.info(f"Pretrain time: {train_time}s")
             self.logger.info(
                 f"Pretrain memory reserved: {train_memory_reserved / (1024 ** 2):.2f} MB"
@@ -740,6 +863,16 @@ class JEPAPretrainEngine(BaseEngine):
                 "memory_reserved_mb": float(train_memory_reserved / (1024**2)),
                 "memory_allocated_mb": float(train_memory_allocated / (1024**2)),
             }
+            if hasattr(
+                self.model,
+                "get_spectral_diagnostics",
+            ):
+                pretrain_log["spectral_context"] = {
+                    **self.model.get_spectral_diagnostics(),
+                    "epoch_mean_update_norm": float(
+                        self.last_epoch_spectrum_update_mean
+                    ),
+                }
             self._log_epoch_info(epoch=f"Pretrain {epoch}", epoch_log=pretrain_log)
 
             self.scheduler.step()
