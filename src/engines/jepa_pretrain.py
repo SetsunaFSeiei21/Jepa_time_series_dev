@@ -478,12 +478,31 @@ class JEPAPretrainEngine(BaseEngine):
         Train one JEPA pretraining epoch.
 
         Online network:
-            receives gradients and is updated by AdamW.
+            Receives gradients and is updated by AdamW after each
+            gradient-accumulation group.
 
         Target network:
-            receives no gradients and is updated by EMA after every
+            Receives no gradients and is updated by EMA after each
             optimizer step.
+
+        Global spectral context C:
+            Spectra from all micro-batches in one gradient-accumulation
+            group are first averaged. C is then updated once using that
+            group-level mean spectrum.
+
+        For accumulation_steps = 8:
+
+            S_group
+                = mean(S_1, S_2, ..., S_8)
+
+            C_new
+                = (1 - spectral_update_rate) * C_old
+                + spectral_update_rate * S_group
+
+        Therefore, all micro-batches in the same accumulation group use
+        the same C.
         """
+
         self.model.train()
         self.target_model.eval()
 
@@ -498,17 +517,49 @@ class JEPAPretrainEngine(BaseEngine):
         total_batches = len(self.train_loader)
 
         if total_batches == 0:
-            self.logger.error("JEPA train_loader contains no batches.")
+            self.logger.error(
+                "JEPA train_loader contains no batches."
+            )
             return True, 0.0
 
         valid_micro_steps = 0
-        last_ema_momentum = self._get_ema_momentum()
 
+        last_ema_momentum = (
+            self._get_ema_momentum()
+        )
+
+        # ------------------------------------------------------------
+        # Spectral diagnostics
+        # ------------------------------------------------------------
+        #
+        # These statistics now count group-level C updates rather than
+        # individual micro-batch updates.
+        # ------------------------------------------------------------
         spectrum_update_sum = 0.0
         spectrum_update_count = 0
         last_spectrum_update_norm = 0.0
 
-        self.optimizer.zero_grad(set_to_none=True)
+        # ------------------------------------------------------------
+        # Spectrum accumulator for one gradient-accumulation group
+        # ------------------------------------------------------------
+        #
+        # spectrum_group_sum stores:
+        #
+        #     sum_i sample_count_i * batch_spectrum_i
+        #
+        # spectrum_group_samples stores:
+        #
+        #     sum_i sample_count_i
+        #
+        # This produces a sample-weighted mean spectrum and correctly
+        # handles a smaller final batch.
+        # ------------------------------------------------------------
+        spectrum_group_sum = None
+        spectrum_group_samples = 0
+
+        self.optimizer.zero_grad(
+            set_to_none=True
+        )
 
         pbar = tqdm(
             self.train_loader,
@@ -518,22 +569,29 @@ class JEPAPretrainEngine(BaseEngine):
 
         for batch_idx, batch_data in enumerate(pbar):
             batch_data: BatchData
-            batch = batch_data.to_device(self.device)
+
+            batch = batch_data.to_device(
+                self.device
+            )
 
             # ------------------------------------------------------------
-            # 1. Replace masked values before normalization.
+            # 1. Replace masked values before normalization
             # ------------------------------------------------------------
             if batch.input_mask is not None:
                 batch.input_seq = torch.where(
                     batch.input_mask,
-                    torch.zeros_like(batch.input_seq),
+                    torch.zeros_like(
+                        batch.input_seq
+                    ),
                     batch.input_seq,
                 )
 
             if batch.target_mask is not None:
                 batch.target_seq = torch.where(
                     batch.target_mask,
-                    torch.zeros_like(batch.target_seq),
+                    torch.zeros_like(
+                        batch.target_seq
+                    ),
                     batch.target_seq,
                 )
 
@@ -552,14 +610,19 @@ class JEPAPretrainEngine(BaseEngine):
             )
 
             # ------------------------------------------------------------
-            # 2. Normalize input and target in the same coordinate system.
+            # 2. Normalize input and target using the same coordinate
+            #    system
             # ------------------------------------------------------------
-            batch.input_seq = self.scalar.fit_transform(
-                batch.input_seq
+            batch.input_seq = (
+                self.scalar.fit_transform(
+                    batch.input_seq
+                )
             )
 
-            batch.target_seq = self.scalar.transform(
-                batch.target_seq
+            batch.target_seq = (
+                self.scalar.transform(
+                    batch.target_seq
+                )
             )
 
             batch.input_seq = torch.nan_to_num(
@@ -575,13 +638,13 @@ class JEPAPretrainEngine(BaseEngine):
                 posinf=0.0,
                 neginf=0.0,
             )
-            
+
             # ------------------------------------------------------------
-            # Compute current batch spectrum.
+            # 3. Compute current micro-batch spectrum
             # ------------------------------------------------------------
             batch_spectrum = None
             batch_spectrum_samples = 0
-            
+
             if hasattr(
                 self.model,
                 "compute_batch_spectrum",
@@ -592,14 +655,58 @@ class JEPAPretrainEngine(BaseEngine):
                 ) = self.model.compute_batch_spectrum(
                     batch.input_seq
                 )
-                
-            # ------------------------------------------------------------
-            # 3. Online encoder + EMA target encoder.
-            # ------------------------------------------------------------
-            Ey, Ey_pred = self._forward_jepa(batch)
 
             # ------------------------------------------------------------
-            # 4. Validate hidden representations.
+            # 4. Accumulate spectra inside the current effective batch
+            # ------------------------------------------------------------
+            #
+            # Do not update C here.
+            #
+            # Each micro-batch spectrum is multiplied by its number of
+            # samples. This is equivalent to computing the mean spectrum
+            # over the combined effective batch.
+            # ------------------------------------------------------------
+            if (
+                batch_spectrum is not None
+                and batch_spectrum_samples > 0
+                and hasattr(
+                    self.model,
+                    "update_global_spectrum",
+                )
+            ):
+                weighted_batch_spectrum = (
+                    batch_spectrum
+                    * float(
+                        batch_spectrum_samples
+                    )
+                )
+
+                if spectrum_group_sum is None:
+                    spectrum_group_sum = (
+                        weighted_batch_spectrum.clone()
+                    )
+                else:
+                    spectrum_group_sum.add_(
+                        weighted_batch_spectrum
+                    )
+
+                spectrum_group_samples += int(
+                    batch_spectrum_samples
+                )
+
+            # ------------------------------------------------------------
+            # 5. Online encoder + EMA target encoder
+            # ------------------------------------------------------------
+            #
+            # All micro-batches in the current accumulation group use
+            # the same old C because C is not updated until should_update.
+            # ------------------------------------------------------------
+            Ey, Ey_pred = self._forward_jepa(
+                batch
+            )
+
+            # ------------------------------------------------------------
+            # 6. Validate hidden representations
             # ------------------------------------------------------------
             has_invalid_embedding = (
                 torch.isnan(Ey).any()
@@ -610,46 +717,60 @@ class JEPAPretrainEngine(BaseEngine):
 
             if has_invalid_embedding:
                 self.logger.error(
-                    "JEPA hidden representation contains NaN/Inf at "
+                    "JEPA hidden representation contains "
+                    "NaN/Inf at "
                     f"batch {batch_idx}. "
-                    f"Ey_nan={torch.isnan(Ey).sum().item()}, "
-                    f"Ey_inf={torch.isinf(Ey).sum().item()}, "
-                    f"Ey_pred_nan={torch.isnan(Ey_pred).sum().item()}, "
-                    f"Ey_pred_inf={torch.isinf(Ey_pred).sum().item()}."
+                    f"Ey_nan="
+                    f"{torch.isnan(Ey).sum().item()}, "
+                    f"Ey_inf="
+                    f"{torch.isinf(Ey).sum().item()}, "
+                    f"Ey_pred_nan="
+                    f"{torch.isnan(Ey_pred).sum().item()}, "
+                    f"Ey_pred_inf="
+                    f"{torch.isinf(Ey_pred).sum().item()}."
                 )
 
                 terminate = True
                 break
 
             # ------------------------------------------------------------
-            # 5. Compute JEPA loss.
+            # 7. Compute JEPA loss
             # ------------------------------------------------------------
             loss, loss_dict = self.jepa_loss(
                 Ey_pred,
                 Ey,
             )
 
-            if torch.isnan(loss) or torch.isinf(loss):
+            if (
+                torch.isnan(loss)
+                or torch.isinf(loss)
+            ):
                 self.logger.error(
-                    f"JEPA loss is NaN/Inf at batch {batch_idx}. "
-                    f"loss_align={loss_dict['loss_align'].item()}, "
-                    f"loss_reg={loss_dict['loss_reg'].item()}."
+                    "JEPA loss is NaN/Inf at "
+                    f"batch {batch_idx}. "
+                    f"loss_align="
+                    f"{loss_dict['loss_align'].item()}, "
+                    f"loss_reg="
+                    f"{loss_dict['loss_reg'].item()}."
                 )
 
                 terminate = True
                 break
 
             # ------------------------------------------------------------
-            # 6. Correct gradient accumulation scaling.
+            # 8. Determine current accumulation-group size
+            # ------------------------------------------------------------
             #
             # Example:
-            #     total batches = 19
+            #
+            #     total_batches = 19
             #     accumulation_steps = 8
             #
             # Groups:
+            #
             #     8, 8, 3
             #
-            # The last group divides by 3 rather than by 8.
+            # The final group divides its loss by 3 instead of 8.
             # ------------------------------------------------------------
             group_start = (
                 batch_idx // accumulation_steps
@@ -660,92 +781,152 @@ class JEPAPretrainEngine(BaseEngine):
                 total_batches - group_start,
             )
 
-            loss_for_backward = loss / current_group_size
+            micro_step_in_group = (
+                batch_idx
+                - group_start
+                + 1
+            )
+
+            # ------------------------------------------------------------
+            # 9. Backward with gradient accumulation
+            # ------------------------------------------------------------
+            loss_for_backward = (
+                loss / current_group_size
+            )
+
             loss_for_backward.backward()
-
-            # ------------------------------------------------------------
-            # Update global spectrum C after the current forward/backward.
-            #
-            # Therefore:
-            #     current batch uses C_{b-1}
-            #     next batch uses C_b
-            # ------------------------------------------------------------
-            if (
-                batch_spectrum is not None
-                and batch_spectrum_samples > 0
-                and hasattr(
-                    self.model,
-                    "update_global_spectrum",
-                )
-            ):
-                last_spectrum_update_norm = (
-                    self.model.update_global_spectrum(
-                        batch_spectrum,
-                        batch_spectrum_samples,
-                    )
-                )
-
-                spectrum_update_sum += (
-                    last_spectrum_update_norm
-                )
-
-                spectrum_update_count += 1
-
-                # The target branch must use the same C in the next batch.
-                self._sync_spectral_buffers_to_target()
 
             valid_micro_steps += 1
 
             avg_loss = (
                 avg_loss
-                * ((valid_micro_steps - 1) / valid_micro_steps)
-                + loss.item() / valid_micro_steps
+                * (
+                    (valid_micro_steps - 1)
+                    / valid_micro_steps
+                )
+                + loss.item()
+                / valid_micro_steps
             )
 
-            micro_step_in_group = (
-                batch_idx - group_start + 1
-            )
-
-            # Update at the end of a complete or final partial group.
+            # Complete group or final partial group.
             should_update = (
-                micro_step_in_group == current_group_size
+                micro_step_in_group
+                == current_group_size
             )
 
+            # ------------------------------------------------------------
+            # 10. Update model, C and target encoder once per group
+            # ------------------------------------------------------------
             if should_update:
+                # --------------------------------------------------------
+                # 10.1 Gradient clipping
+                # --------------------------------------------------------
                 if self.clip_grad_value > 0:
                     torch.nn.utils.clip_grad_norm_(
                         self.model.parameters(),
                         self.clip_grad_value,
                     )
 
-                # Update online network.
+                # --------------------------------------------------------
+                # 10.2 Update online model parameters
+                # --------------------------------------------------------
                 self.optimizer.step()
 
-                # Update EMA target network after online parameters change.
+                # --------------------------------------------------------
+                # 10.3 Compute group-level mean spectrum and update C
+                # --------------------------------------------------------
+                #
+                # For equal micro-batch sizes:
+                #
+                #     group_spectrum
+                #         = mean(S_1, ..., S_8)
+                #
+                # For unequal sizes, this is the sample-weighted mean.
+                # --------------------------------------------------------
+                if (
+                    spectrum_group_sum is not None
+                    and spectrum_group_samples > 0
+                    and hasattr(
+                        self.model,
+                        "update_global_spectrum",
+                    )
+                ):
+                    group_spectrum = (
+                        spectrum_group_sum
+                        / float(
+                            spectrum_group_samples
+                        )
+                    )
+
+                    last_spectrum_update_norm = (
+                        self.model.update_global_spectrum(
+                            group_spectrum,
+                            spectrum_group_samples,
+                        )
+                    )
+
+                    spectrum_update_sum += (
+                        last_spectrum_update_norm
+                    )
+
+                    spectrum_update_count += 1
+
+                # --------------------------------------------------------
+                # 10.4 Update EMA target encoder
+                # --------------------------------------------------------
+                #
+                # _update_target_encoder() updates target parameters and
+                # copies registered buffers from the online model.
+                # Therefore, the newly updated C is also copied.
+                # --------------------------------------------------------
                 last_ema_momentum = (
                     self._update_target_encoder()
                 )
 
-                self.optimizer.zero_grad(set_to_none=True)
+                # Keep this explicit synchronization for safety and
+                # readability. It ensures that target C is identical to
+                # online C before the next accumulation group.
+                self._sync_spectral_buffers_to_target()
+
+                # --------------------------------------------------------
+                # 10.5 Clear parameter gradients
+                # --------------------------------------------------------
+                self.optimizer.zero_grad(
+                    set_to_none=True
+                )
+
+                # --------------------------------------------------------
+                # 10.6 Clear spectral accumulators
+                # --------------------------------------------------------
+                spectrum_group_sum = None
+                spectrum_group_samples = 0
 
             pbar.set_description(
                 "JEPA Loss: "
                 f"{loss.item():.4f}, "
-                f"Align: {loss_dict['loss_align'].item():.4f}, "
-                f"SIGReg: {loss_dict['loss_reg'].item():.4f}, "
+                f"Align: "
+                f"{loss_dict['loss_align'].item():.4f}, "
+                f"SIGReg: "
+                f"{loss_dict['loss_reg'].item():.4f}, "
                 f"Avg: {avg_loss:.4f}, "
                 f"Accum: "
-                f"{micro_step_in_group}/{current_group_size}, "
-                f"EMA: {last_ema_momentum:.6f}, "
-                f"C-delta: {last_spectrum_update_norm:.6e}"
+                f"{micro_step_in_group}/"
+                f"{current_group_size}, "
+                f"EMA: "
+                f"{last_ema_momentum:.6f}, "
+                f"C-delta: "
+                f"{last_spectrum_update_norm:.6e}"
             )
 
         if valid_micro_steps == 0:
             self.logger.error(
-                "No valid JEPA pretraining batches in this epoch."
+                "No valid JEPA pretraining batches "
+                "in this epoch."
             )
+
             terminate = True
 
+        # Mean norm over group-level C updates.
         if spectrum_update_count > 0:
             self.last_epoch_spectrum_update_mean = (
                 spectrum_update_sum

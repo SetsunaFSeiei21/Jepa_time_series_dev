@@ -23,7 +23,7 @@ mkdir -p hpc_logs
 #   traffic
 # )
 
-DATASETS=(etth2 ettm2)
+DATASETS=(etth2 exchange_rate)
 TASKS=(time-series)
 SEEDS=(0 1 2)
 
