@@ -1,3 +1,45 @@
+# _target_: 'src.models.time-series.patchtst_spectral.PatchTST'
+
+# # PatchTST encoder
+# n_layers: 2
+# n_heads: 8
+# d_model: 64
+# d_ff: 128
+
+# # Dropout
+# dropout: 0.05
+# attn_dropout: 0.0
+
+# # Patching
+# patch_len: 24
+# stride: 12
+# padding_patch: true
+
+# # Normalization / head
+# revin: false
+# affine: false
+# individual: true
+# subtract_last: false
+
+# # Decomposition
+# decomposition: false
+# kernel_size: 5
+
+# # Transformer details
+# activation: gelu
+# norm: BatchNorm
+# pre_norm: false
+# res_attention: true
+# store_attn: false
+
+# # Global spectral context C
+# spectral_smoothing_kernel: 5
+# spectral_gate_init: 0.10
+# spectral_dropout: 0.0
+# spectral_normalize: true
+# spectral_remove_dc: false
+# spectral_eps: 1.0e-8
+
 _target_: 'src.models.time-series.patchtst_spectral.PatchTST'
 
 # PatchTST encoder
@@ -33,9 +75,32 @@ res_attention: true
 store_attn: false
 
 # Global spectral context C
+
+# Frequency-domain smoothing window.
+# Must be a positive odd integer.
 spectral_smoothing_kernel: 5
+
+# Fixed EMA update rate:
+#
+# C_new
+#   = (1 - spectral_update_rate) * C_old
+#   + spectral_update_rate * C_batch
+#
+# This coefficient does not decrease when more samples are seen.
+# The first valid batch initializes C directly.
+spectral_update_rate: 0.001
+
+# Initial value of sigmoid(gate).
 spectral_gate_init: 0.10
+
+# Dropout applied to projected spectral context.
 spectral_dropout: 0.0
+
+# Normalize each sample/channel spectrum along frequency.
 spectral_normalize: true
+
+# Remove the temporal mean before rFFT.
 spectral_remove_dc: false
+
+# Numerical stability constant.
 spectral_eps: 1.0e-8
