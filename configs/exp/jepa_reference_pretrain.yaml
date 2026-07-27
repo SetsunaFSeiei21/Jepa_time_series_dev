@@ -40,8 +40,10 @@ jepa_reg_on: pred
 jepa_ema_momentum_start: 0.999 # 0.999
 jepa_ema_momentum_end: 1.0
 
+# ------------------------------------------------------------
+# Ratio-conditioned reference spectrum bank
+# ------------------------------------------------------------
 use_reference_bank: true
-train_mode: pretrain
 
 train_ratios:
   - 0.4
