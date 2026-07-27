@@ -9,6 +9,7 @@ import copy
 import math
 import os
 import sys
+from collections import Counter
 from datetime import datetime
 from time import time
 from typing import Dict, Any, Tuple
@@ -62,6 +63,23 @@ class JEPAPretrainEngine(BaseEngine):
         self.clip_grad_value = config["clip_grad_value"]
         self.accumulation_steps = config["accumulation_steps"]
         self.save_freq = config["save_freq"]
+        
+        # ------------------------------------------------------------
+        # Reference-ratio loss balancing
+        # ------------------------------------------------------------
+
+        self.balance_reference_loss = bool(
+            config.get(
+                "balance_reference_loss",
+                False,
+            )
+        )
+
+        self.reference_sample_counts = {}
+        self.reference_loss_weights = None
+
+        if self.balance_reference_loss:
+            self._initialize_reference_loss_balance()
         
         # ------------------------------------------------------------
         # EMA target encoder configuration
@@ -169,6 +187,652 @@ class JEPAPretrainEngine(BaseEngine):
             milestones=self.milestones,
             gamma=self.gamma,
         )
+        
+    def _initialize_reference_loss_balance(
+        self,
+    ) -> None:
+        """
+        Compute inverse-frequency loss weights for every
+        reference ratio.
+
+        For ratio k:
+
+            weight_k = total_samples
+                    / (num_ratios * samples_k)
+
+        This ensures:
+
+            samples_k * weight_k
+
+        is identical for every ratio.
+        """
+
+        dataset = self.train_loader.dataset
+
+        if not hasattr(
+            dataset,
+            "sample_index_map",
+        ):
+            raise AttributeError(
+                "balance_reference_loss=true requires "
+                "the training dataset to expose "
+                "sample_index_map."
+            )
+
+        reference_counter = Counter()
+
+        for (
+            reference_index,
+            _,
+        ) in dataset.sample_index_map:
+            reference_index = int(
+                reference_index
+            )
+
+            # -1 denotes an ordinary sample without
+            # a reference-bank condition.
+            if reference_index >= 0:
+                reference_counter[
+                    reference_index
+                ] += 1
+
+        if len(reference_counter) == 0:
+            raise RuntimeError(
+                "balance_reference_loss=true, but no "
+                "reference-conditioned samples were found."
+            )
+
+        sorted_indices = sorted(
+            reference_counter.keys()
+        )
+
+        expected_indices = list(
+            range(
+                len(sorted_indices)
+            )
+        )
+
+        if sorted_indices != expected_indices:
+            raise RuntimeError(
+                "Reference indices must be contiguous and "
+                "start from zero. "
+                f"Found indices={sorted_indices}."
+            )
+
+        total_samples = sum(
+            reference_counter.values()
+        )
+
+        num_ratios = len(
+            reference_counter
+        )
+
+        weights = torch.empty(
+            num_ratios,
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        for reference_index in sorted_indices:
+            sample_count = reference_counter[
+                reference_index
+            ]
+
+            weights[reference_index] = (
+                float(total_samples)
+                / (
+                    float(num_ratios)
+                    * float(sample_count)
+                )
+            )
+
+        self.reference_sample_counts = {
+            int(reference_index): int(
+                reference_counter[
+                    reference_index
+                ]
+            )
+            for reference_index
+            in sorted_indices
+        }
+
+        self.reference_loss_weights = (
+            weights
+        )
+
+        ratio_values = getattr(
+            dataset,
+            "reference_ratios",
+            None,
+        )
+
+        if ratio_values is None:
+            ratio_values = sorted_indices
+
+        balance_description = []
+
+        for reference_index in sorted_indices:
+            balance_description.append(
+                {
+                    "reference_index": (
+                        reference_index
+                    ),
+                    "ratio": float(
+                        ratio_values[
+                            reference_index
+                        ]
+                    ),
+                    "sample_count": (
+                        self.reference_sample_counts[
+                            reference_index
+                        ]
+                    ),
+                    "loss_weight": float(
+                        self.reference_loss_weights[
+                            reference_index
+                        ].item()
+                    ),
+                }
+            )
+
+        self.logger.info(
+            "Reference-ratio loss balancing enabled: "
+            f"{balance_description}"
+        )
+    
+    def _compute_jepa_loss(
+        self,
+        Ey_pred: torch.Tensor,
+        Ey: torch.Tensor,
+        reference_index: torch.Tensor,
+    ):
+        """
+        Compute ordinary or reference-ratio-balanced
+        JEPA loss.
+
+        For a batch containing ratio groups k:
+
+            loss =
+                sum_k [
+                    (batch_count_k / batch_size)
+                    * weight_k
+                    * loss_k
+                ]
+
+        With batch_size=1, this becomes:
+
+            loss = weight_k * loss_k
+        """
+
+        # --------------------------------------------------------
+        # Ordinary JEPA behavior
+        # --------------------------------------------------------
+
+        if not self.balance_reference_loss:
+            loss, loss_dict = self.jepa_loss(
+                Ey_pred,
+                Ey,
+            )
+
+            loss_dict = dict(
+                loss_dict
+            )
+
+            loss_dict["loss_raw"] = (
+                loss_dict["loss"]
+            )
+
+            loss_dict["balance_weight"] = (
+                torch.ones(
+                    (),
+                    device=loss.device,
+                    dtype=loss.dtype,
+                )
+            )
+
+            return loss, loss_dict
+
+        # --------------------------------------------------------
+        # Reference-balanced behavior
+        # --------------------------------------------------------
+
+        if reference_index is None:
+            raise RuntimeError(
+                "Reference-ratio loss balancing is enabled, "
+                "but the current batch has no "
+                "reference_index."
+            )
+
+        reference_index = (
+            reference_index
+            .reshape(-1)
+            .to(
+                device=Ey_pred.device,
+                dtype=torch.long,
+            )
+        )
+
+        batch_size = Ey_pred.shape[0]
+
+        if (
+            reference_index.numel()
+            != batch_size
+        ):
+            raise RuntimeError(
+                "reference_index batch size does not "
+                "match JEPA embedding batch size: "
+                f"{reference_index.numel()} "
+                f"vs {batch_size}."
+            )
+
+        if (
+            reference_index.min().item() < 0
+            or reference_index.max().item()
+            >= self.reference_loss_weights.numel()
+        ):
+            raise IndexError(
+                "reference_index is outside the "
+                "reference-loss weight table."
+            )
+
+        balanced_loss = Ey_pred.new_zeros(
+            ()
+        )
+
+        balanced_align = Ey_pred.new_zeros(
+            ()
+        )
+
+        balanced_reg = Ey_pred.new_zeros(
+            ()
+        )
+
+        raw_loss = Ey_pred.new_zeros(
+            ()
+        )
+
+        raw_align = Ey_pred.new_zeros(
+            ()
+        )
+
+        raw_reg = Ey_pred.new_zeros(
+            ()
+        )
+
+        unique_reference_indices = (
+            torch.unique(
+                reference_index
+            )
+        )
+
+        for current_index in (
+            unique_reference_indices
+        ):
+            ratio_mask = (
+                reference_index
+                == current_index
+            )
+
+            ratio_batch_count = (
+                ratio_mask.sum()
+            )
+
+            ratio_fraction = (
+                ratio_batch_count.to(
+                    dtype=Ey_pred.dtype
+                )
+                / float(batch_size)
+            )
+
+            ratio_loss, ratio_loss_dict = (
+                self.jepa_loss(
+                    Ey_pred[ratio_mask],
+                    Ey[ratio_mask],
+                )
+            )
+
+            ratio_weight = (
+                self.reference_loss_weights[
+                    current_index
+                ].to(
+                    device=Ey_pred.device,
+                    dtype=Ey_pred.dtype,
+                )
+            )
+
+            coefficient = (
+                ratio_fraction
+                * ratio_weight
+            )
+
+            # Differentiable balanced objective.
+            balanced_loss = (
+                balanced_loss
+                + coefficient
+                * ratio_loss
+            )
+
+            # Detached diagnostics.
+            balanced_align = (
+                balanced_align
+                + coefficient.detach()
+                * ratio_loss_dict[
+                    "loss_align"
+                ]
+            )
+
+            balanced_reg = (
+                balanced_reg
+                + coefficient.detach()
+                * ratio_loss_dict[
+                    "loss_reg"
+                ]
+            )
+
+            raw_loss = (
+                raw_loss
+                + ratio_fraction.detach()
+                * ratio_loss.detach()
+            )
+
+            raw_align = (
+                raw_align
+                + ratio_fraction.detach()
+                * ratio_loss_dict[
+                    "loss_align"
+                ]
+            )
+
+            raw_reg = (
+                raw_reg
+                + ratio_fraction.detach()
+                * ratio_loss_dict[
+                    "loss_reg"
+                ]
+            )
+
+        batch_weights = (
+            self.reference_loss_weights
+            .index_select(
+                dim=0,
+                index=reference_index,
+            )
+            .to(
+                device=Ey_pred.device,
+                dtype=Ey_pred.dtype,
+            )
+        )
+
+        return balanced_loss, {
+            "loss": (
+                balanced_loss.detach()
+            ),
+            "loss_raw": (
+                raw_loss.detach()
+            ),
+            "loss_align": (
+                balanced_align.detach()
+            ),
+            "loss_reg": (
+                balanced_reg.detach()
+            ),
+            "loss_align_raw": (
+                raw_align.detach()
+            ),
+            "loss_reg_raw": (
+                raw_reg.detach()
+            ),
+            "balance_weight": (
+                batch_weights.mean().detach()
+            ),
+        }
+        
+    def _compute_jepa_loss(
+        self,
+        Ey_pred: torch.Tensor,
+        Ey: torch.Tensor,
+        reference_index: torch.Tensor,
+    ):
+        """
+        Compute ordinary or reference-ratio-balanced
+        JEPA loss.
+
+        For a batch containing ratio groups k:
+
+            loss =
+                sum_k [
+                    (batch_count_k / batch_size)
+                    * weight_k
+                    * loss_k
+                ]
+
+        With batch_size=1, this becomes:
+
+            loss = weight_k * loss_k
+        """
+
+        # --------------------------------------------------------
+        # Ordinary JEPA behavior
+        # --------------------------------------------------------
+
+        if not self.balance_reference_loss:
+            loss, loss_dict = self.jepa_loss(
+                Ey_pred,
+                Ey,
+            )
+
+            loss_dict = dict(
+                loss_dict
+            )
+
+            loss_dict["loss_raw"] = (
+                loss_dict["loss"]
+            )
+
+            loss_dict["balance_weight"] = (
+                torch.ones(
+                    (),
+                    device=loss.device,
+                    dtype=loss.dtype,
+                )
+            )
+
+            return loss, loss_dict
+
+        # --------------------------------------------------------
+        # Reference-balanced behavior
+        # --------------------------------------------------------
+
+        if reference_index is None:
+            raise RuntimeError(
+                "Reference-ratio loss balancing is enabled, "
+                "but the current batch has no "
+                "reference_index."
+            )
+
+        reference_index = (
+            reference_index
+            .reshape(-1)
+            .to(
+                device=Ey_pred.device,
+                dtype=torch.long,
+            )
+        )
+
+        batch_size = Ey_pred.shape[0]
+
+        if (
+            reference_index.numel()
+            != batch_size
+        ):
+            raise RuntimeError(
+                "reference_index batch size does not "
+                "match JEPA embedding batch size: "
+                f"{reference_index.numel()} "
+                f"vs {batch_size}."
+            )
+
+        if (
+            reference_index.min().item() < 0
+            or reference_index.max().item()
+            >= self.reference_loss_weights.numel()
+        ):
+            raise IndexError(
+                "reference_index is outside the "
+                "reference-loss weight table."
+            )
+
+        balanced_loss = Ey_pred.new_zeros(
+            ()
+        )
+
+        balanced_align = Ey_pred.new_zeros(
+            ()
+        )
+
+        balanced_reg = Ey_pred.new_zeros(
+            ()
+        )
+
+        raw_loss = Ey_pred.new_zeros(
+            ()
+        )
+
+        raw_align = Ey_pred.new_zeros(
+            ()
+        )
+
+        raw_reg = Ey_pred.new_zeros(
+            ()
+        )
+
+        unique_reference_indices = (
+            torch.unique(
+                reference_index
+            )
+        )
+
+        for current_index in (
+            unique_reference_indices
+        ):
+            ratio_mask = (
+                reference_index
+                == current_index
+            )
+
+            ratio_batch_count = (
+                ratio_mask.sum()
+            )
+
+            ratio_fraction = (
+                ratio_batch_count.to(
+                    dtype=Ey_pred.dtype
+                )
+                / float(batch_size)
+            )
+
+            ratio_loss, ratio_loss_dict = (
+                self.jepa_loss(
+                    Ey_pred[ratio_mask],
+                    Ey[ratio_mask],
+                )
+            )
+
+            ratio_weight = (
+                self.reference_loss_weights[
+                    current_index
+                ].to(
+                    device=Ey_pred.device,
+                    dtype=Ey_pred.dtype,
+                )
+            )
+
+            coefficient = (
+                ratio_fraction
+                * ratio_weight
+            )
+
+            # Differentiable balanced objective.
+            balanced_loss = (
+                balanced_loss
+                + coefficient
+                * ratio_loss
+            )
+
+            # Detached diagnostics.
+            balanced_align = (
+                balanced_align
+                + coefficient.detach()
+                * ratio_loss_dict[
+                    "loss_align"
+                ]
+            )
+
+            balanced_reg = (
+                balanced_reg
+                + coefficient.detach()
+                * ratio_loss_dict[
+                    "loss_reg"
+                ]
+            )
+
+            raw_loss = (
+                raw_loss
+                + ratio_fraction.detach()
+                * ratio_loss.detach()
+            )
+
+            raw_align = (
+                raw_align
+                + ratio_fraction.detach()
+                * ratio_loss_dict[
+                    "loss_align"
+                ]
+            )
+
+            raw_reg = (
+                raw_reg
+                + ratio_fraction.detach()
+                * ratio_loss_dict[
+                    "loss_reg"
+                ]
+            )
+
+        batch_weights = (
+            self.reference_loss_weights
+            .index_select(
+                dim=0,
+                index=reference_index,
+            )
+            .to(
+                device=Ey_pred.device,
+                dtype=Ey_pred.dtype,
+            )
+        )
+
+        return balanced_loss, {
+            "loss": (
+                balanced_loss.detach()
+            ),
+            "loss_raw": (
+                raw_loss.detach()
+            ),
+            "loss_align": (
+                balanced_align.detach()
+            ),
+            "loss_reg": (
+                balanced_reg.detach()
+            ),
+            "loss_align_raw": (
+                raw_align.detach()
+            ),
+            "loss_reg_raw": (
+                raw_reg.detach()
+            ),
+            "balance_weight": (
+                batch_weights.mean().detach()
+            ),
+        }
     
     def _get_ema_momentum(self) -> float:
         """
@@ -657,9 +1321,14 @@ class JEPAPretrainEngine(BaseEngine):
             # ------------------------------------------------------------
             # 7. Compute JEPA loss
             # ------------------------------------------------------------
-            loss, loss_dict = self.jepa_loss(
-                Ey_pred,
-                Ey,
+            loss, loss_dict = (
+                self._compute_jepa_loss(
+                    Ey_pred=Ey_pred,
+                    Ey=Ey,
+                    reference_index=(
+                        batch.reference_index
+                    ),
+                )
             )
 
             if (
@@ -822,22 +1491,26 @@ class JEPAPretrainEngine(BaseEngine):
                 spectrum_group_sum = None
                 spectrum_group_samples = 0
 
-            pbar.set_description(
-                "JEPA Loss: "
-                f"{loss.item():.4f}, "
-                f"Align: "
-                f"{loss_dict['loss_align'].item():.4f}, "
-                f"SIGReg: "
-                f"{loss_dict['loss_reg'].item():.4f}, "
-                f"Avg: {avg_loss:.4f}, "
-                f"Accum: "
-                f"{micro_step_in_group}/"
-                f"{current_group_size}, "
-                f"EMA: "
-                f"{last_ema_momentum:.6f}, "
-                f"C-delta: "
-                f"{last_spectrum_update_norm:.6e}"
-            )
+        pbar.set_description(
+            "JEPA Balanced: "
+            f"{loss.item():.4f}, "
+            f"Raw: "
+            f"{loss_dict['loss_raw'].item():.4f}, "
+            f"W: "
+            f"{loss_dict['balance_weight'].item():.4f}, "
+            f"Align: "
+            f"{loss_dict['loss_align'].item():.4f}, "
+            f"SIGReg: "
+            f"{loss_dict['loss_reg'].item():.4f}, "
+            f"Avg: {avg_loss:.4f}, "
+            f"Accum: "
+            f"{micro_step_in_group}/"
+            f"{current_group_size}, "
+            f"EMA: "
+            f"{last_ema_momentum:.6f}, "
+            f"C-delta: "
+            f"{last_spectrum_update_norm:.6e}"
+        )
 
         if valid_micro_steps == 0:
             self.logger.error(

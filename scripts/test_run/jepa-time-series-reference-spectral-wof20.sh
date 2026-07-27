@@ -17,7 +17,6 @@ mkdir -p hpc_logs
 # ============================================================
 
 DATASETS=(
-  etth2
   exchange_rate
 )
 

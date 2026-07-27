@@ -5,7 +5,7 @@ prefetch_factor: 8
 
 max_epochs: 50
 
-lr: 0.001 # 0.0001
+lr: 0.0001 # 0.0001
 weight_decay: 0.0001
 
 milestones: [10, 20, 30, 40]
@@ -46,8 +46,12 @@ jepa_ema_momentum_end: 1.0
 use_reference_bank: true
 
 train_ratios:
-  - 0.4
-  - 0.6
-  - 0.8
+  - 0.1
+  - 0.5
+  - 0.9
 
 append_relative_time: true
+
+# Make every reference ratio contribute equally to the
+# epoch-level JEPA objective.
+balance_reference_loss: true  
