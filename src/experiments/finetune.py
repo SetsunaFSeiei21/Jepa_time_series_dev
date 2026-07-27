@@ -13,6 +13,9 @@ from src.factories.loader import get_loaders
 from src.factories.logger import LoggerFactory
 from src.factories.model import ModelFactory
 
+from src.utils.reference_spectrum import (
+    initialize_reference_spectrum_bank,
+)
 
 def set_seed(seed):
     np.random.seed(seed)
@@ -164,7 +167,27 @@ def main(cfg: DictConfig):
         logger=logger,
     )
 
-    engine: ExpertEngine = TrainingEngineFactory.create_engine(
+    reference_info = (
+        initialize_reference_spectrum_bank(
+            model=model,
+            train_loader=(
+                loaders["train_loader"]
+            ),
+            device=DEVICE,
+        )
+    )
+
+    if reference_info is not None:
+        logger.info(
+            "Initialized finetuning reference bank: "
+            f"ratios="
+            f"{reference_info['reference_ratios']}, "
+            f"lengths="
+            f"{reference_info['reference_lengths']}."
+        )
+
+    engine: ExpertEngine = (
+        TrainingEngineFactory.create_engine(
         model_name=model_name,
         device=DEVICE,
         model=model,
@@ -176,6 +199,7 @@ def main(cfg: DictConfig):
         test_loader=loaders["test_loader"],
         loss_func=loss_func,
         config=exp_kwargs,
+        )
     )
 
     engine.run()

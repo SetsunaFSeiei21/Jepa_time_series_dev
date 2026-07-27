@@ -15,6 +15,10 @@ from src.factories.logger import LoggerFactory
 from src.factories.model import ModelFactory
 from src.engines.jepa_pretrain import JEPAPretrainEngine
 
+from src.utils.reference_spectrum import (
+    initialize_reference_spectrum_bank,
+)
+
 # 设置随机种子
 def set_seed(seed):
     np.random.seed(seed)
@@ -79,8 +83,36 @@ def main(cfg: DictConfig):
                 "max:", torch.nan_to_num(p, nan=0.0, posinf=0.0, neginf=0.0).max().item())
             breakpoint()
     # model.load_state_dict(torch.load("outputs/2026-01-24/11-01-15/model_parameters.pt"))
-    log_folder = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    logger = LoggerFactory.create_logger(log_folder, mode="pretrain")
+    log_folder = (
+        hydra.core.hydra_config
+        .HydraConfig.get()
+        .runtime.output_dir
+    )
+
+    logger = LoggerFactory.create_logger(
+        log_folder,
+        mode="pretrain",
+    )
+
+    reference_info = (
+        initialize_reference_spectrum_bank(
+            model=model,
+            train_loader=(
+                loaders["train_loader"]
+            ),
+            device=DEVICE,
+        )
+    )
+
+    if reference_info is not None:
+        logger.info(
+            "Initialized pretraining reference bank: "
+            f"ratios="
+            f"{reference_info['reference_ratios']}, "
+            f"lengths="
+            f"{reference_info['reference_lengths']}."
+        )
+
     engine = JEPAPretrainEngine(
         device=DEVICE,
         model=model,

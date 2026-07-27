@@ -169,94 +169,6 @@ class JEPAPretrainEngine(BaseEngine):
             milestones=self.milestones,
             gamma=self.gamma,
         )
-
-    # def train_epoch(self) -> Tuple[bool, float]:
-    #     self.model.train()
-    #     avg_loss = 0.0
-    #     terminate = False
-
-    #     accumulation_steps = max(1, int(self.accumulation_steps))
-    #     total_batches = len(self.train_loader)
-
-    #     self.optimizer.zero_grad(set_to_none=True)
-
-    #     pbar = tqdm(self.train_loader, desc="JEPA Pretraining", file=sys.stdout)
-
-    #     for batch_idx, batch_data in enumerate(pbar):
-    #         batch_data: BatchData
-    #         batch = batch_data.to_device(self.device)
-
-    #         if batch.input_mask is not None:
-    #             batch.input_seq = torch.where(
-    #                 batch.input_mask,
-    #                 torch.zeros_like(batch.input_seq),
-    #                 batch.input_seq,
-    #             )
-
-    #         if batch.target_mask is not None:
-    #             batch.target_seq = torch.where(
-    #                 batch.target_mask,
-    #                 torch.zeros_like(batch.target_seq),
-    #                 batch.target_seq,
-    #             )
-                
-    #         # Normalize input and target in the same coordinate system.
-    #         batch.input_seq = self.scalar.fit_transform(batch.input_seq)
-    #         batch.target_seq = self.scalar.transform(batch.target_seq)
-
-    #         # Determine current accumulation group size.
-    #         group_start = (batch_idx // accumulation_steps) * accumulation_steps
-    #         current_group_size = min(accumulation_steps, total_batches - group_start)
-
-    #         Ey, Ey_pred = self.model(
-    #             input_seq=batch.input_seq,
-    #             input_features=batch.input_features,
-    #             target_seq=batch.target_seq,
-    #             target_features=batch.target_features,
-    #             mode="pretrain",
-    #         )
-
-    #         # Raw loss for logging
-    #         loss, loss_dict = self.jepa_loss(Ey_pred, Ey)
-
-    #         if torch.isnan(loss):
-    #             self.logger.error("JEPA pretraining loss is NaN. Terminating.")
-    #             terminate = True
-    #             break
-
-    #         # Scale loss before backward.
-    #         loss_for_backward = loss / current_group_size
-    #         loss_for_backward.backward()
-
-    #         avg_loss = avg_loss * (batch_idx / (batch_idx + 1)) + loss.item() / (
-    #             batch_idx + 1
-    #         )
-
-    #         pbar.set_description(
-    #             "JEPA Loss: "
-    #             f"{loss.item():.4f}, "
-    #             f"Align: {loss_dict['loss_align'].item():.4f}, "
-    #             f"SIGReg: {loss_dict['loss_reg'].item():.4f}, "
-    #             f"Avg: {avg_loss:.4f}, "
-    #             f"Accum: {(batch_idx % accumulation_steps) + 1}/{current_group_size}"
-    #         )
-
-    #         should_update = (
-    #             ((batch_idx + 1) % accumulation_steps == 0)
-    #             or ((batch_idx + 1) == total_batches)
-    #         )
-
-    #         if should_update:
-    #             if self.clip_grad_value > 0:
-    #                 torch.nn.utils.clip_grad_norm_(
-    #                     self.model.parameters(),
-    #                     self.clip_grad_value,
-    #                 )
-
-    #             self.optimizer.step()
-    #             self.optimizer.zero_grad(set_to_none=True)
-
-    #     return terminate, avg_loss
     
     def _get_ema_momentum(self) -> float:
         """
@@ -438,10 +350,18 @@ class JEPAPretrainEngine(BaseEngine):
                 f"{type(self.target_model).__name__} does not implement encode()."
             )
 
+        encode_kwargs = {}
+
+        if batch.reference_index is not None:
+            encode_kwargs["reference_index"] = (
+                batch.reference_index
+            )
+
         # Online path.
         Ex = self.model.encode(
             batch.input_seq,
             batch.input_features,
+            **encode_kwargs,
         )
 
         Ey_pred = self.model.predict(Ex)
@@ -451,6 +371,7 @@ class JEPAPretrainEngine(BaseEngine):
             Ey = self.target_model.encode(
                 batch.target_seq,
                 batch.target_features,
+                **encode_kwargs,
             )
 
         # Handle Crossformer, iTransformer and ordinary Tensor outputs.

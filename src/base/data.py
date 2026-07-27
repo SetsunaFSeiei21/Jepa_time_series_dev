@@ -29,6 +29,11 @@ class BatchData:
     target_features: Optional[torch.Tensor] = None
     input_mask: Optional[torch.Tensor] = None
     target_mask: Optional[torch.Tensor] = None
+
+    # 每个样本使用 reference bank 中的哪个 C。
+    # shape: (B,)
+    reference_index: Optional[torch.Tensor] = None
+
     metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
@@ -75,6 +80,17 @@ class BatchData:
             assert (
                 self.target_mask.shape[:3] == self.target_seq.shape[:3]
             ), f"target_mask shape mismatch: {self.target_mask.shape} vs {self.target_seq.shape}"
+            
+        if self.reference_index is not None:
+            assert self.reference_index.dim() == 1, (
+                "reference_index must have shape (B,), "
+                f"but got {tuple(self.reference_index.shape)}."
+            )
+
+            assert self.reference_index.shape[0] == batch_size, (
+                "reference_index batch size mismatch: "
+                f"{self.reference_index.shape[0]} vs {batch_size}."
+            )
 
         self.batch_size = batch_size
         self.num_nodes = num_nodes
@@ -97,6 +113,9 @@ class BatchData:
         if self.target_mask is not None:
             result["target_mask"] = self.target_mask
 
+        if self.reference_index is not None:
+            result["reference_index"] = self.reference_index
+
         return result
 
     def to_device(self, device: torch.device) -> "BatchData":
@@ -118,8 +137,17 @@ class BatchData:
                 self.input_mask.to(device) if self.input_mask is not None else None
             ),
             target_mask=(
-                self.target_mask.to(device) if self.target_mask is not None else None
+                self.target_mask.to(device)
+                if self.target_mask is not None
+                else None
             ),
+
+            reference_index=(
+                self.reference_index.to(device)
+                if self.reference_index is not None
+                else None
+            ),
+
             metadata=self.metadata,
         )
 
@@ -160,6 +188,16 @@ def prepare_batch(batch_data: Union[Tuple, Dict, BatchData]) -> BatchData:
                 target_features=batch_data[3],
                 input_mask=batch_data[4],
                 target_mask=batch_data[5],
+            )
+        elif len(batch_data) == 7:
+            return BatchData(
+                input_seq=batch_data[0],
+                target_seq=batch_data[1],
+                input_features=batch_data[2],
+                target_features=batch_data[3],
+                input_mask=batch_data[4],
+                target_mask=batch_data[5],
+                reference_index=batch_data[6],
             )
         else:
             raise ValueError(f"Unsupported tuple length: {len(batch_data)}")

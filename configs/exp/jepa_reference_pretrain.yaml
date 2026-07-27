@@ -39,3 +39,13 @@ jepa_reg_on: pred
 # ------------------------------------------------------------
 jepa_ema_momentum_start: 0.999 # 0.999
 jepa_ema_momentum_end: 1.0
+
+use_reference_bank: true
+train_mode: pretrain
+
+train_ratios:
+  - 0.4
+  - 0.6
+  - 0.8
+
+append_relative_time: true

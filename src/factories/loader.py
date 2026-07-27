@@ -64,58 +64,78 @@ def load_adjacency_matrix(dataset_path: Path, num_nodes: Optional[int] = None) -
 
 def collate_fn(batch):
     """
-    Convert a batch of tuples to a BatchData object.
+    Supports:
 
-    Args:
-        batch: List of tuples, each from dataset.__getitem__
-            Each tuple contains:
-            - input_seq: (his_len, num_nodes, 1)
-            - target_seq: (pred_len, num_nodes, 1)
-            - input_features: (his_len, num_features)
-            - target_features: (pred_len, num_features)
-            - input_mask: (his_len, num_nodes, 1)
-            - target_mask: (pred_len, num_nodes, 1)
-
-    Returns:
-        BatchData object with batch dimension added
+    1. ordinary six-item samples;
+    2. multi-reference seven-item samples.
     """
-    # Unpack the batch
-    (
-        input_seqs,
-        target_seqs,
-        input_feats,
-        target_feats,
-        input_masks,
-        target_masks,
-    ) = zip(*batch)
 
-    # Stack all tensors to add batch dimension
-    # input_seq: (batch_size, his_len, num_nodes, 1)
-    input_seq_batch = torch.stack(input_seqs, dim=0)
+    sample_size = len(batch[0])
 
-    # target_seq: (batch_size, pred_len, num_nodes, 1)
-    target_seq_batch = torch.stack(target_seqs, dim=0)
+    if sample_size == 6:
+        (
+            input_seqs,
+            target_seqs,
+            input_feats,
+            target_feats,
+            input_masks,
+            target_masks,
+        ) = zip(*batch)
 
-    # input_features: (batch_size, his_len, num_features)
-    input_features_batch = torch.stack(input_feats, dim=0)
+        reference_index_batch = None
 
-    # target_features: (batch_size, pred_len, num_features)
-    target_features_batch = torch.stack(target_feats, dim=0)
+    elif sample_size == 7:
+        (
+            input_seqs,
+            target_seqs,
+            input_feats,
+            target_feats,
+            input_masks,
+            target_masks,
+            reference_indices,
+        ) = zip(*batch)
 
-    # input_mask: (batch_size, his_len, num_nodes, 1)
-    input_mask_batch = torch.stack(input_masks, dim=0)
+        reference_index_batch = (
+            torch.stack(
+                reference_indices,
+                dim=0,
+            ).long()
+        )
 
-    # target_mask: (batch_size, pred_len, num_nodes, 1)
-    target_mask_batch = torch.stack(target_masks, dim=0)
+    else:
+        raise ValueError(
+            "Unsupported dataset sample size: "
+            f"{sample_size}."
+        )
 
-    # Create BatchData object
     return BatchData(
-        input_seq=input_seq_batch,
-        target_seq=target_seq_batch,
-        input_features=input_features_batch,
-        target_features=target_features_batch,
-        input_mask=input_mask_batch,
-        target_mask=target_mask_batch,
+        input_seq=torch.stack(
+            input_seqs,
+            dim=0,
+        ),
+        target_seq=torch.stack(
+            target_seqs,
+            dim=0,
+        ),
+        input_features=torch.stack(
+            input_feats,
+            dim=0,
+        ),
+        target_features=torch.stack(
+            target_feats,
+            dim=0,
+        ),
+        input_mask=torch.stack(
+            input_masks,
+            dim=0,
+        ),
+        target_mask=torch.stack(
+            target_masks,
+            dim=0,
+        ),
+        reference_index=(
+            reference_index_batch
+        ),
     )
 
 
@@ -343,7 +363,85 @@ def get_presplit_loaders(
         os.path.expanduser(os.path.join(data_root, dataset_kwargs["name"]))
     )
 
-    timestamp_dim = dataset_kwargs.get("timestamp_dim", 4)
+    timestamp_dim = dataset_kwargs.get(
+        "timestamp_dim",
+        4,
+    )
+
+    # ------------------------------------------------------------
+    # Reference-bank configuration
+    # ------------------------------------------------------------
+
+    use_reference_bank = bool(
+        exp_kwargs.get(
+            "use_reference_bank",
+            False,
+        )
+    )
+
+    train_mode = str(
+        exp_kwargs.get(
+            "train_mode",
+            "finetune",
+        )
+    ).lower()
+
+    if use_reference_bank:
+        if train_mode == "pretrain":
+            reference_ratios = list(
+                exp_kwargs.get(
+                    "train_ratios",
+                    [],
+                )
+            )
+
+            reference_mode = "pretrain"
+
+        elif train_mode == "finetune":
+            reference_ratios = list(
+                exp_kwargs.get(
+                    "checkpoint_ratios",
+                    [],
+                )
+            )
+
+            reference_mode = "finetune"
+
+        else:
+            raise ValueError(
+                "Reference-bank experiments require "
+                "train_mode='pretrain' or "
+                f"'finetune', got {train_mode}."
+            )
+
+        append_relative_time = bool(
+            exp_kwargs.get(
+                "append_relative_time",
+                True,
+            )
+        )
+
+    else:
+        # Preserve all original experiments.
+        reference_ratios = []
+        reference_mode = "none"
+        append_relative_time = False
+
+    train_data_len = int(
+        np.load(
+            dataset_path
+            / "train_data.npy",
+            mmap_mode="r",
+        ).shape[0]
+    )
+
+    val_data_len = int(
+        np.load(
+            dataset_path
+            / "val_data.npy",
+            mmap_mode="r",
+        ).shape[0]
+    )
 
     train_dataset = PreSplitMTSDataset(
         dataset_path,
@@ -351,6 +449,19 @@ def get_presplit_loaders(
         pred_len=pred_len,
         split="train",
         timestamp_dim=timestamp_dim,
+        reference_ratios=(
+            reference_ratios
+        ),
+        reference_mode=(
+            reference_mode
+        ),
+        append_relative_time=(
+            append_relative_time
+        ),
+        global_time_offset=0,
+        train_data_len=(
+            train_data_len
+        ),
     )
 
     val_dataset = PreSplitMTSDataset(
@@ -359,6 +470,21 @@ def get_presplit_loaders(
         pred_len=pred_len,
         split="val",
         timestamp_dim=timestamp_dim,
+        reference_ratios=(
+            reference_ratios
+        ),
+        reference_mode=(
+            reference_mode
+        ),
+        append_relative_time=(
+            append_relative_time
+        ),
+        global_time_offset=(
+            train_data_len
+        ),
+        train_data_len=(
+            train_data_len
+        ),
     )
 
     test_dataset = PreSplitMTSDataset(
@@ -367,6 +493,22 @@ def get_presplit_loaders(
         pred_len=pred_len,
         split="test",
         timestamp_dim=timestamp_dim,
+        reference_ratios=(
+            reference_ratios
+        ),
+        reference_mode=(
+            reference_mode
+        ),
+        append_relative_time=(
+            append_relative_time
+        ),
+        global_time_offset=(
+            train_data_len
+            + val_data_len
+        ),
+        train_data_len=(
+            train_data_len
+        ),
     )
 
     # Non-graph time-series datasets do not have adj_mtx.npy.

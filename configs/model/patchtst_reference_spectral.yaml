@@ -1,0 +1,37 @@
+_target_: 'src.models.time-series.patchtst_reference_spectral.PatchTST'
+
+n_layers: 2
+n_heads: 8
+d_model: 64
+d_ff: 128
+
+dropout: 0.05
+attn_dropout: 0.0
+
+patch_len: 24
+stride: 12
+padding_patch: true
+
+revin: false
+affine: false
+individual: true
+subtract_last: false
+
+decomposition: false
+kernel_size: 5
+
+activation: gelu
+norm: BatchNorm
+pre_norm: false
+res_attention: true
+store_attn: false
+
+spectral_smoothing_kernel: 5
+spectral_normalize: true
+spectral_remove_dc: true
+spectral_eps: 1.0e-8
+spectral_dropout: 0.0
+
+reference_gate_init: 0.05
+local_gate_init: 0.05
+time_gate_init: 0.05
