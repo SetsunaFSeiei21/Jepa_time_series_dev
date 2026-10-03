@@ -17,14 +17,14 @@ mkdir -p hpc_logs
 
 # Full experiment setting:
 # DATASETS=(pems03 pems04 pems07 pems08 pems-bay metr-la)
-# DATASETS=(pems07)
-# # TASKS=(short long)
-# TASKS=(test_task)
-# # SEEDS=(0 1 2)
+DATASETS=(metr-la)
+# TASKS=(short long)
+TASKS=(test_task)
+SEEDS=(0 1 2)
 # SEEDS=(1)
 
 # # MODELS=(stgcn astgcn gwnet sttn staeformer)
-# MODELS=(astgcn)
+MODELS=(gwnet)
 
 # ================================
 # Experiment scope time-series-datasets
@@ -36,7 +36,7 @@ mkdir -p hpc_logs
 # SEEDS=(0)
 # MODELS=(stgcn_jepa)
 
-NUM_WORKERS=8
+NUM_WORKERS=1
 
 DATE_TAG=$(date +"%Y-%m-%d")
 ROOT_DIR="jepa-repeat/${DATE_TAG}"

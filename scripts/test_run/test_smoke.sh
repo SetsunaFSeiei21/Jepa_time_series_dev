@@ -18,13 +18,13 @@ mkdir -p hpc_logs
 # Smoke test scope: time-series-datasets
 # ================================
 # DATASETS=(etth1 etth2 ettm1 ettm2 illness electricity pulse traffic weather exchange_rate)
-DATASETS=(etth1)
+DATASETS=(pems04)
 TASKS=(test_task)
 SEEDS=(1)
 # MODELS=(autoformer fedformer crossformer itransformer patchtst)
-MODELS=(itransformer)
+MODELS=(gwnet)
 
-NUM_WORKERS=8
+NUM_WORKERS=3
 BATCH_SIZE=1
 PREFETCH_FACTOR=2
 
@@ -45,7 +45,7 @@ for model in "${MODELS[@]}"; do
         ############################
         # A. smoke finetune from scratch
         ############################
-        FT1_DIR="${MODEL_ROOT_DIR}/finetune1/${dataset}/${task}/seed_${seed}"
+        FT1_DIR="${MODEL_ROOT_DIR}/finetune4/${dataset}/${task}/seed_${seed}"
 
         sbatch \
           -J "smk-ft1-${model_tag}-${dataset}-${task}-s${seed}" \
@@ -58,7 +58,7 @@ for model in "${MODELS[@]}"; do
             task=${task} \
             exp=jepa_finetune \
             seed=${seed} \
-            exp.max_epochs=1 \
+            exp.max_epochs=4 \
             exp.batch_size=${BATCH_SIZE} \
             exp.num_workers=${NUM_WORKERS} \
             exp.prefetch_factor=${PREFETCH_FACTOR} \
@@ -68,8 +68,8 @@ for model in "${MODELS[@]}"; do
         ############################
         # B1. smoke pretrain
         ############################
-        PRETRAIN_DIR="${MODEL_ROOT_DIR}/pretrain1/${dataset}/${task}/seed_${seed}"
-        PRETRAIN_CKPT="${PROJECT_ROOT}/${PRETRAIN_DIR}/jepa_pretrain_epoch_1.pth"
+        PRETRAIN_DIR="${MODEL_ROOT_DIR}/pretrain2/${dataset}/${task}/seed_${seed}"
+        PRETRAIN_CKPT="${PROJECT_ROOT}/${PRETRAIN_DIR}/jepa_pretrain_epoch_2.pth"
 
         PRETRAIN_JOB_ID=$(sbatch --parsable \
           -J "smk-pt1-${model_tag}-${dataset}-${task}-s${seed}" \
@@ -82,7 +82,7 @@ for model in "${MODELS[@]}"; do
             task=${task} \
             exp=jepa_pretrain \
             seed=${seed} \
-            exp.max_epochs=1 \
+            exp.max_epochs=2 \
             exp.save_freq=1 \
             exp.batch_size=${BATCH_SIZE} \
             exp.num_workers=${NUM_WORKERS} \
@@ -94,7 +94,7 @@ for model in "${MODELS[@]}"; do
         ############################
         # B2. smoke finetune from pretrain
         ############################
-        PT1_FT1_DIR="${MODEL_ROOT_DIR}/pretrain1_finetune1/${dataset}/${task}/seed_${seed}"
+        PT1_FT1_DIR="${MODEL_ROOT_DIR}/pretrain2_finetune2/${dataset}/${task}/seed_${seed}"
 
         sbatch \
           --dependency=afterok:${PRETRAIN_JOB_ID} \
@@ -108,7 +108,7 @@ for model in "${MODELS[@]}"; do
             task=${task} \
             exp=jepa_finetune \
             seed=${seed} \
-            exp.max_epochs=1 \
+            exp.max_epochs=2 \
             exp.batch_size=${BATCH_SIZE} \
             exp.num_workers=${NUM_WORKERS} \
             exp.prefetch_factor=${PREFETCH_FACTOR} \
