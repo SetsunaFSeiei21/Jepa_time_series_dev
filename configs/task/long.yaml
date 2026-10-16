@@ -1,5 +1,3 @@
 his_len: 96
 pred_len: 96
-patch_len: 24
-stride: 12
-moving_avg: 25
+eval_stride: ${.pred_len}   # step between val/test windows; set 1 for the dense protocol

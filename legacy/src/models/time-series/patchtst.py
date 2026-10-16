@@ -1,0 +1,1109 @@
+__all__ = ["MovingAverage", "SeriesDecomposition", "Flatten_Head", "PatchTST"]
+
+from typing import Optional
+import torch
+from torch import nn
+import torch.nn.functional as F
+from torch import Tensor
+from src.base.model import BaseModel
+from einops.layers.torch import Rearrange
+from einops import rearrange
+
+
+class Transpose(nn.Module):
+    def __init__(self, *dims, contiguous=True):
+        self.dims, self.contiguous = dims, contiguous
+
+    def forward(self, x):
+        x = x.contiguous()
+        if self.contiguous:
+            return x.transpose(*self.dims).contiguous()
+        else:
+            return x.transpose(*self.dims)
+
+    def __repr__(self):
+        if self.contiguous:
+            return f"{self.__class__.__name__}(dims={', '.join([str(d) for d in self.dims])}).contiguous()"
+        else:
+            return (
+                f"{self.__class__.__name__}({', '.join([str(d) for d in self.dims])})"
+            )
+
+
+class RevIN(nn.Module):
+    """Reversible Instance Normalization layer adapted from
+
+    Kim, T., Kim, J., Tae, Y., Park, C., Choi, J. H., & Choo, J. (2021, September).
+    Reversible instance normalization for accurate time-series forecasting against distribution shift.
+    In International Conference on Learning Representations.
+    Original code: https://github.com/ts-kim/RevIN
+    """
+
+    def __init__(
+        self,
+        c_in: int,  # #features (aka variables or channels)
+        affine: bool = True,  # flag to incidate if RevIN has learnable weight and bias
+        subtract_last: bool = False,
+        dim: int = 2,  # int or tuple of dimensions used to calculate mean and std
+        eps: float = 1e-5,  # epsilon - parameter added for numerical stability
+    ):
+        super().__init__()
+        self.c_in, self.affine, self.subtract_last, self.dim, self.eps = (
+            c_in,
+            affine,
+            subtract_last,
+            dim,
+            eps,
+        )
+        if self.affine:
+            self.weight = nn.Parameter(torch.ones(1, c_in, 1))
+            self.bias = nn.Parameter(torch.zeros(1, c_in, 1))
+
+    def forward(self, x: Tensor, mode: Tensor):
+        """Args:
+
+        x: rank 3 tensor with shape [batch size x c_in x sequence length]
+        mode: torch.tensor(True) to normalize data and torch.tensor(False) to reverse normalization
+        """
+
+        # Normalize
+        if mode:
+            return self.normalize(x)
+
+        # Denormalize
+        else:
+            return self.denormalize(x)
+
+    def normalize(self, x):
+        if self.subtract_last:
+            self.sub = x[..., -1].unsqueeze(-1).detach()
+        else:
+            self.sub = torch.mean(x, dim=-1, keepdim=True).detach()
+        self.std = (
+            torch.std(x, dim=-1, keepdim=True, unbiased=False).detach() + self.eps
+        )
+        if self.affine:
+            x = x.sub(self.sub)
+            x = x.div(self.std)
+            x = x.mul(self.weight)
+            x = x.add(self.bias)
+            return x
+        else:
+            x = x.sub(self.sub)
+            x = x.div(self.std)
+            return x
+
+    def denormalize(self, x):
+        if self.affine:
+            x = x.sub(self.bias)
+            x = x.div(self.weight)
+            x = x.mul(self.std)
+            x = x.add(self.sub)
+            return x
+        else:
+            x = x.mul(self.std)
+            x = x.add(self.sub)
+            return x
+
+
+class MovingAverage(nn.Module):
+    "Moving average block to highlight the trend of time series"
+
+    def __init__(
+        self,
+        kernel_size: int,  # the size of the window
+    ):
+        super().__init__()
+        padding_left = (kernel_size - 1) // 2
+        padding_right = kernel_size - padding_left - 1
+        self.padding = torch.nn.ReplicationPad1d((padding_left, padding_right))
+        self.avg = nn.AvgPool1d(kernel_size=kernel_size, stride=1)
+
+    def forward(self, x: Tensor):
+        """
+        Args:
+            x: torch.Tensor shape: [bs x seq_len x features]
+        """
+        return self.avg(self.padding(x))
+
+
+class SeriesDecomposition(nn.Module):
+    "Series decomposition block"
+
+    def __init__(
+        self,
+        kernel_size: int,  # the size of the window
+    ):
+        super().__init__()
+        self.moving_avg = MovingAverage(kernel_size)
+
+    def forward(self, x: Tensor):
+        """Args:
+        x: torch.Tensor shape: [bs x seq_len x features]
+        """
+        moving_mean = self.moving_avg(x)
+        residual = x - moving_mean
+        return residual, moving_mean
+
+
+class _ScaledDotProductAttention(nn.Module):
+    r"""Scaled Dot-Product Attention module (Attention is all you need by Vaswani et al., 2017) with
+    optional residual attention from previous layer
+    Realformer: Transformer likes residual attention by He et al, 2020
+    """
+
+    def __init__(self, d_model, n_heads, attn_dropout=0.0, res_attention=False):
+        super().__init__()
+        self.attn_dropout = nn.Dropout(attn_dropout)
+        self.res_attention = res_attention
+        head_dim = d_model // n_heads
+        self.scale = nn.Parameter(torch.tensor(head_dim**-0.5), requires_grad=False)
+
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, prev: Optional[Tensor] = None):
+        """
+        Input shape:
+            q               : [bs x n_heads x max_q_len x d_k] # d_k = d_model // n_heads
+            k               : [bs x n_heads x d_k x seq_len]   # d_k = d_model // n_heads
+            v               : [bs x n_heads x seq_len x d_v]   # d_v = d_model // n_heads
+            prev            : [bs x n_heads x q_len x seq_len]
+        Output shape:
+            output          :  [bs x n_heads x q_len x d_v]    # d_v = d_model // n_heads
+            attn            : [bs x n_heads x q_len x seq_len]
+            scores          : [bs x n_heads x q_len x seq_len]
+        """
+
+        # Scaled MatMul (q, k) - similarity scores for all pairs of positions in an input sequence
+        # attn_scores : [bs x n_heads x max_q_len x q_len]
+        attn_scores = torch.matmul(q, k) * self.scale
+
+        # Add pre-softmax attention scores from the previous layer (optional)
+        if prev is not None:
+            attn_scores = attn_scores + prev
+
+        # normalize the attention weights
+        # attn_weights   : [bs x n_heads x max_q_len x q_len]
+        attn_weights = F.softmax(attn_scores, dim=-1)
+        attn_weights = self.attn_dropout(attn_weights)
+
+        # compute the new values given the attention weights
+        # output: [bs x n_heads x max_q_len x d_v]
+        output = torch.matmul(attn_weights, v)
+
+        if self.res_attention:
+            return output, attn_weights, attn_scores
+        else:
+            return output, attn_weights
+
+
+class _MultiheadAttention(nn.Module):
+    def __init__(
+        self,
+        d_model,
+        n_heads,
+        d_k=None,
+        d_v=None,
+        res_attention=False,
+        attn_dropout=0.0,
+        proj_dropout=0.0,
+        qkv_bias=True,
+    ):
+        "Multi Head Attention Layer"
+
+        super().__init__()
+        d_k = d_v = d_model // n_heads
+
+        self.n_heads, self.d_k, self.d_v = n_heads, d_k, d_v
+
+        self.W_Q = nn.Linear(d_model, d_k * n_heads, bias=qkv_bias)
+        self.W_K = nn.Linear(d_model, d_k * n_heads, bias=qkv_bias)
+        self.W_V = nn.Linear(d_model, d_v * n_heads, bias=qkv_bias)
+
+        # Scaled Dot-Product Attention (multiple heads)
+        self.res_attention = res_attention
+        self.sdp_attn = _ScaledDotProductAttention(
+            d_model,
+            n_heads,
+            attn_dropout=attn_dropout,
+            res_attention=self.res_attention,
+        )
+
+        # Poject output
+        self.to_out = nn.Sequential(
+            nn.Linear(n_heads * d_v, d_model), nn.Dropout(proj_dropout)
+        )
+
+    def forward(
+        self,
+        Q: Tensor,
+        K: Optional[Tensor] = None,
+        V: Optional[Tensor] = None,
+        prev: Optional[Tensor] = None,
+    ):
+        """
+        Args:
+            Q:       [batch_size (bs) x max_q_len x d_model]
+            K, V:    [batch_size (bs) x q_len x d_model]
+            mask:    [q_len x q_len]
+        """
+
+        bs = Q.size(0)
+        if K is None:
+            K = Q
+        if V is None:
+            V = Q
+
+        # Linear (+ split in multiple heads)
+        q_s = (
+            self.W_Q(Q).view(bs, -1, self.n_heads, self.d_k).transpose(1, 2)
+        )  # q_s: [bs x n_heads x max_q_len x d_k]
+        k_s = (
+            self.W_K(K).view(bs, -1, self.n_heads, self.d_k).permute(0, 2, 3, 1)
+        )  # k_s: [bs x n_heads x d_k x q_len] - transpose(1,2) + transpose(2,3)
+        v_s = (
+            self.W_V(V).view(bs, -1, self.n_heads, self.d_v).transpose(1, 2)
+        )  # v_s: [bs x n_heads x q_len x d_v]
+
+        # Apply Scaled Dot-Product Attention (multiple heads)
+        if self.res_attention:
+            output, attn_weights, attn_scores = self.sdp_attn(q_s, k_s, v_s, prev=prev)
+        else:
+            output, attn_weights = self.sdp_attn(q_s, k_s, v_s)
+        # output: [bs x n_heads x q_len x d_v], attn: [bs x n_heads x q_len x q_len], scores: [bs x n_heads x max_q_len x q_len]
+
+        # back to the original inputs dimensions
+        output = (
+            output.transpose(1, 2).contiguous().view(bs, -1, self.n_heads * self.d_v)
+        )  # output: [bs x q_len x n_heads * d_v]
+        output = self.to_out(output)
+
+        if self.res_attention:
+            return output, attn_weights, attn_scores
+        else:
+            return output, attn_weights
+
+
+class Flatten_Head(nn.Module):
+    def __init__(self, individual, n_vars, nf, pred_dim):
+        super().__init__()
+
+        if isinstance(pred_dim, (tuple, list)):
+            pred_dim = pred_dim[-1]
+        self.individual = individual
+        self.n = n_vars if individual else 1
+        self.nf, self.pred_dim = nf, pred_dim
+
+        if individual:
+            self.layers = nn.ModuleList()
+            for i in range(self.n):
+                self.layers.append(
+                    nn.Sequential(nn.Flatten(start_dim=-2), nn.Linear(nf, pred_dim))
+                )
+        else:
+            self.layer = nn.Sequential(
+                nn.Flatten(start_dim=-2), nn.Linear(nf, pred_dim)
+            )
+
+    def forward(self, x: Tensor):
+        """
+        Args:
+            x: [bs x nvars x d_model x n_patch]
+            output: [bs x nvars x pred_dim]
+        """
+        if self.individual:
+            x_out = []
+            for i, layer in enumerate(self.layers):
+                x_out.append(layer(x[:, i]))
+            x = torch.stack(x_out, dim=1)
+            return x
+        else:
+            return self.layer(x)
+
+
+def get_activation_fn(activation):
+    """
+    Build the feed-forward activation module from the config value.
+
+    Same behaviour as official PatchTST (layers/PatchTST_layers.py):
+        "relu" -> nn.ReLU()
+        "gelu" -> nn.GELU()
+        callable -> activation()  (e.g. an nn.Module class)
+    """
+    if callable(activation):
+        return activation()
+    elif activation.lower() == "relu":
+        return nn.ReLU()
+    elif activation.lower() == "gelu":
+        return nn.GELU()
+    raise ValueError(
+        f'{activation} is not available. You can use "relu", "gelu", or a callable'
+    )
+
+
+class _TSTiEncoderLayer(nn.Module):
+    def __init__(
+        self,
+        q_len,
+        d_model,
+        n_heads,
+        d_k=None,
+        d_v=None,
+        d_ff=256,
+        store_attn=False,
+        norm="BatchNorm",
+        attn_dropout=0,
+        dropout=0.0,
+        bias=True,
+        activation="gelu",
+        res_attention=False,
+        pre_norm=False,
+    ):
+        super().__init__()
+        assert (
+            not d_model % n_heads
+        ), f"d_model ({d_model}) must be divisible by n_heads ({n_heads})"
+        d_k = d_model // n_heads if d_k is None else d_k
+        d_v = d_model // n_heads if d_v is None else d_v
+
+        # Multi-Head attention
+        self.res_attention = res_attention
+        self.self_attn = _MultiheadAttention(
+            d_model,
+            n_heads,
+            d_k,
+            d_v,
+            attn_dropout=attn_dropout,
+            proj_dropout=dropout,
+            res_attention=res_attention,
+        )
+
+        # Add & Norm
+        self.dropout_attn = nn.Dropout(dropout)
+        if "batch" in norm.lower():
+            self.norm_attn = nn.Sequential(
+                Rearrange("b l d -> b d l"),
+                nn.BatchNorm1d(d_model),
+                Rearrange("b l d -> b d l"),
+            )
+        else:
+            self.norm_attn = nn.LayerNorm(d_model)
+
+        # Position-wise Feed-Forward
+        # The activation now follows the `activation` argument (config key
+        # `activation`) instead of being hardcoded to GELU. The activation
+        # module has no parameters, so state_dict keys are unchanged.
+        self.ff = nn.Sequential(
+            nn.Linear(d_model, d_ff, bias=bias),
+            get_activation_fn(activation),
+            nn.Dropout(dropout),
+            nn.Linear(d_ff, d_model, bias=bias),
+        )
+
+        # Add & Norm
+        self.dropout_ffn = nn.Dropout(dropout)
+        if "batch" in norm.lower():
+            self.norm_ffn = nn.Sequential(
+                Rearrange("b l d -> b d l"),
+                nn.BatchNorm1d(d_model),
+                Rearrange("b l d -> b d l"),
+            )
+        else:
+            self.norm_ffn = nn.LayerNorm(d_model)
+
+        self.pre_norm = pre_norm
+        self.store_attn = store_attn
+
+    def forward(self, src: Tensor, prev: Optional[Tensor] = None):
+        """
+        Args:
+            src: [bs x q_len x d_model]
+        """
+
+        # Multi-Head attention sublayer
+        if self.pre_norm:
+            src = self.norm_attn(src)
+        ## Multi-Head attention
+        if self.res_attention:
+            src2, attn, scores = self.self_attn(src, src, src, prev)
+        else:
+            src2, attn = self.self_attn(src, src, src)
+        if self.store_attn:
+            self.attn = attn
+        ## Add & Norm
+        src = src + self.dropout_attn(
+            src2
+        )  # Add: residual connection with residual dropout
+        if not self.pre_norm:
+            src = self.norm_attn(src)
+
+        # Feed-forward sublayer
+        if self.pre_norm:
+            src = self.norm_ffn(src)
+        ## Position-wise Feed-Forward
+        src2 = self.ff(src)
+        ## Add & Norm
+        src = src + self.dropout_ffn(
+            src2
+        )  # Add: residual connection with residual dropout
+        if not self.pre_norm:
+            src = self.norm_ffn(src)
+
+        if self.res_attention:
+            return src, scores
+        else:
+            return src
+
+
+class _TSTiEncoder(nn.Module):  # i means channel-independent
+    def __init__(
+        self,
+        c_in,
+        patch_num,
+        patch_len,
+        n_layers=3,
+        d_model=128,
+        n_heads=16,
+        d_k=None,
+        d_v=None,
+        d_ff=256,
+        norm="BatchNorm",
+        attn_dropout=0.0,
+        dropout=0.0,
+        act="gelu",
+        store_attn=False,
+        res_attention=True,
+        pre_norm=False,
+    ):
+
+        super().__init__()
+
+        self.patch_num = patch_num
+        self.patch_len = patch_len
+
+        # Input encoding
+        q_len = patch_num
+        self.W_P = nn.Linear(
+            patch_len, d_model
+        )  # Eq 1: projection of feature vectors onto a d-dim vector space
+        self.seq_len = q_len
+
+        # Positional encoding
+        W_pos = torch.empty((q_len, d_model))
+        nn.init.uniform_(W_pos, -0.02, 0.02)
+        self.W_pos = nn.Parameter(W_pos)
+
+        # Residual dropout
+        self.dropout = nn.Dropout(dropout)
+
+        # Encoder
+        self.layers = nn.ModuleList(
+            [
+                _TSTiEncoderLayer(
+                    q_len,
+                    d_model,
+                    n_heads=n_heads,
+                    d_k=d_k,
+                    d_v=d_v,
+                    d_ff=d_ff,
+                    norm=norm,
+                    attn_dropout=attn_dropout,
+                    dropout=dropout,
+                    activation=act,
+                    res_attention=res_attention,
+                    pre_norm=pre_norm,
+                    store_attn=store_attn,
+                )
+                for i in range(n_layers)
+            ]
+        )
+        self.res_attention = res_attention
+
+    def forward(self, x: Tensor):
+        """
+        Args:
+            x: [bs x nvars x patch_len x patch_num]
+        """
+
+        n_vars = x.shape[1]
+        # Input encoding
+        x = x.permute(0, 1, 3, 2)  # x: [bs x nvars x patch_num x patch_len]
+        x = self.W_P(x)  # x: [bs x nvars x patch_num x d_model]
+
+        x = torch.reshape(
+            x, (x.shape[0] * x.shape[1], x.shape[2], x.shape[3])
+        )  # x: [bs * nvars x patch_num x d_model]
+        x = self.dropout(x + self.W_pos)  # x: [bs * nvars x patch_num x d_model]
+
+        # Encoder
+        if self.res_attention:
+            scores = None
+            for mod in self.layers:
+                x, scores = mod(x, prev=scores)
+        else:
+            for mod in self.layers:
+                x = mod(x)
+        x = torch.reshape(
+            x, (-1, n_vars, x.shape[-2], x.shape[-1])
+        )  # x: [bs x nvars x patch_num x d_model]
+        x = x.permute(0, 1, 3, 2)  # x: [bs x nvars x d_model x patch_num]
+
+        return x
+
+
+class _PatchTST_backbone(nn.Module):
+    def __init__(
+        self,
+        c_in,
+        seq_len,
+        pred_dim,
+        patch_len,
+        stride,
+        n_layers=3,
+        d_model=128,
+        n_heads=16,
+        d_k=None,
+        d_v=None,
+        d_ff=256,
+        norm="BatchNorm",
+        attn_dropout=0.0,
+        dropout=0.0,
+        act="gelu",
+        res_attention=True,
+        pre_norm=False,
+        store_attn=False,
+        padding_patch=True,
+        individual=False,
+        revin=True,
+        affine=True,
+        subtract_last=False,
+    ):
+
+        super().__init__()
+
+        # RevIn
+        self.revin = revin
+        self.revin_layer = RevIN(c_in, affine=affine, subtract_last=subtract_last)
+
+        # # Patching
+        self.patch_len = patch_len
+        self.stride = stride
+        self.padding_patch = padding_patch
+        patch_num = int((seq_len - patch_len) / stride + 1) + 1
+        self.patch_num = patch_num
+        # Replication padding of `stride` steps at the END of the series,
+        # as in official PatchTST / TSLib: ReplicationPad1d((left, right)).
+        #
+        # Note:
+        #   An earlier version used (stride, 0), i.e. padding at the FRONT.
+        #   Because unfold drops the trailing remainder when
+        #   (seq_len + stride - patch_len) % stride != 0
+        #   (e.g. his_len=128, patch_len=24, stride=12 -> 8 steps), front
+        #   padding meant the NEWEST steps were never covered by any patch.
+        #   The patch count is identical for both sides, so shapes and
+        #   checkpoints are unaffected by this change.
+        self.padding_patch_layer = nn.ReplicationPad1d(
+            (0, stride)
+        )  # original padding at the end
+
+        # Unfold
+        self.unfold = nn.Unfold(kernel_size=(1, patch_len), stride=stride)
+        self.patch_len = patch_len
+
+        # Backbone
+        self.backbone = _TSTiEncoder(
+            c_in,
+            patch_num=patch_num,
+            patch_len=patch_len,
+            n_layers=n_layers,
+            d_model=d_model,
+            n_heads=n_heads,
+            d_k=d_k,
+            d_v=d_v,
+            d_ff=d_ff,
+            # Pass the configured normalization through. Previously this
+            # argument was missing, so the encoder always fell back to its
+            # own default (BatchNorm) regardless of the config.
+            norm=norm,
+            attn_dropout=attn_dropout,
+            dropout=dropout,
+            act=act,
+            res_attention=res_attention,
+            pre_norm=pre_norm,
+            store_attn=store_attn,
+        )
+
+        # Head
+        self.head_nf = d_model * patch_num
+        self.n_vars = c_in
+        self.individual = individual
+        self.head = Flatten_Head(self.individual, self.n_vars, self.head_nf, pred_dim)
+
+    def forward(self, z: Tensor):
+        """
+        Args:
+            z: [bs x c_in x seq_len]
+        """
+
+        # norm
+        if self.revin:
+            z = self.revin_layer(z, torch.tensor(True, dtype=torch.bool))
+
+        # do patching
+        z = self.padding_patch_layer(z)
+        b, c, s = z.size()
+        z = z.reshape(-1, 1, 1, s)
+        z = self.unfold(z)
+        z = z.permute(0, 2, 1).reshape(b, c, -1, self.patch_len).permute(0, 1, 3, 2)
+
+        # model
+        z = self.backbone(z)  # z: [bs x nvars x d_model x patch_num]
+        z = self.head(z)  # z: [bs x nvars x pred_dim]
+
+        # denorm
+        if self.revin:
+            z = self.revin_layer(z, torch.tensor(False, dtype=torch.bool))
+        return z
+
+
+class PatchTST(BaseModel):
+    def __init__(
+        self,
+        # c_in,  # number of input channels
+        # c_out,  # used for compatibility
+        # seq_len,  # input sequence length
+        # pred_dim=None,  # prediction sequence length
+        n_layers=2,  # number of encoder layers
+        n_heads=8,  # number of heads
+        d_model=64,  # dimension of model
+        d_ff=128,  # dimension of fully connected network (fcn)
+        dropout=0.05,  # dropout applied to all linear layers in the encoder
+        attn_dropout=0.0,  # dropout applied to the attention scores
+        patch_len=8,  # patch_len
+        stride=4,  # stride
+        padding_patch=True,  # flag to indicate if padded is added if necessary
+        revin=False,  # RevIN
+        affine=False,  # RevIN affine
+        individual=True,  # individual head
+        subtract_last=False,  # subtract_last
+        decomposition=False,  # apply decomposition
+        kernel_size=5,  # decomposition kernel size
+        activation="gelu",  # activation function of intermediate layer, relu or gelu.
+        norm="BatchNorm",  # type of normalization layer used in the encoder
+        pre_norm=False,  # flag to indicate if normalization is applied as the first step in the sublayers
+        res_attention=True,  # flag to indicate if Residual MultiheadAttention should be used
+        store_attn=False,  # can be used to visualize attention weights
+        **args,
+    ):
+
+        super(PatchTST, self).__init__(**args)
+
+        # # model
+        # if pred_dim is None:
+        #     pred_dim = seq_len
+        c_in = self.node_num
+        seq_len = self.his_len
+        pred_dim = self.pred_len
+
+        self.decomposition = decomposition
+        if self.decomposition:
+            self.decomp_module = SeriesDecomposition(kernel_size)
+            self.model_trend = _PatchTST_backbone(
+                c_in=c_in,
+                seq_len=seq_len,
+                pred_dim=pred_dim,
+                patch_len=patch_len,
+                stride=stride,
+                n_layers=n_layers,
+                d_model=d_model,
+                n_heads=n_heads,
+                d_ff=d_ff,
+                norm=norm,
+                attn_dropout=attn_dropout,
+                dropout=dropout,
+                act=activation,
+                res_attention=res_attention,
+                pre_norm=pre_norm,
+                store_attn=store_attn,
+                padding_patch=padding_patch,
+                individual=individual,
+                revin=revin,
+                affine=affine,
+                subtract_last=subtract_last,
+            )
+            self.model_res = _PatchTST_backbone(
+                c_in=c_in,
+                seq_len=seq_len,
+                pred_dim=pred_dim,
+                patch_len=patch_len,
+                stride=stride,
+                n_layers=n_layers,
+                d_model=d_model,
+                n_heads=n_heads,
+                d_ff=d_ff,
+                norm=norm,
+                attn_dropout=attn_dropout,
+                dropout=dropout,
+                act=activation,
+                res_attention=res_attention,
+                pre_norm=pre_norm,
+                store_attn=store_attn,
+                padding_patch=padding_patch,
+                individual=individual,
+                revin=revin,
+                affine=affine,
+                subtract_last=subtract_last,
+            )
+            self.patch_num = self.model_trend.patch_num
+        else:
+            self.model = _PatchTST_backbone(
+                c_in=c_in,
+                seq_len=seq_len,
+                pred_dim=pred_dim,
+                patch_len=patch_len,
+                stride=stride,
+                n_layers=n_layers,
+                d_model=d_model,
+                n_heads=n_heads,
+                d_ff=d_ff,
+                norm=norm,
+                attn_dropout=attn_dropout,
+                dropout=dropout,
+                act=activation,
+                res_attention=res_attention,
+                pre_norm=pre_norm,
+                store_attn=store_attn,
+                padding_patch=padding_patch,
+                individual=individual,
+                revin=revin,
+                affine=affine,
+                subtract_last=subtract_last,
+            )
+            self.patch_num = self.model.patch_num
+            # JEPA predictor baseline:
+            # PatchTST hidden representation:
+            #   Ex:      (B, N, d_model, patch_num)
+            #   Ey:      (B, N, d_model, patch_num)
+            #   Ey_pred: (B, N, d_model, patch_num)
+            #
+            # This v0 predictor maps hidden dimension d_model -> d_model
+            # patch-wisely. It does not change patch_num.
+            #
+            # Note:
+            #   This v0 version assumes his_len == pred_len, so Ex and Ey
+            #   have the same patch_num after the same PatchTST patching/backbone.
+            # self.d_model = d_model
+            # self.jepa_predictor = nn.Sequential(
+            #     nn.Linear(d_model, d_model),
+            #     nn.GELU(),
+            #     nn.Linear(d_model, d_model),
+            # )
+            
+            self.d_model = d_model
+
+            # PatchTST hidden representation:
+            #     (B, N, d_model, patch_num)
+            #
+            # SIGReg should regard d_model as the embedding dimension.
+            # Therefore, the embedding dimension is axis 2 rather than the last axis.
+            self.jepa_feature_dim = 2
+
+            # Residual JEPA predictor, identity at initialization:
+            #
+            #   predict(Ex) = Ex + jepa_predictor(Ex)
+            #
+            # The LAST Linear is zero-initialized (weight and bias), so at
+            # init jepa_predictor(Ex) == 0 and predict(Ex) == Ex. The finetune
+            # path (decode(predict(encode(x)))) therefore starts exactly at the
+            # original PatchTST forward, i.e. the "w/o JEPA" baseline is not
+            # perturbed by an untrained predictor.
+            #
+            # Note:
+            #   At init the first Linear receives zero gradient (its output is
+            #   multiplied by the zero weight of the last Linear); only the last
+            #   Linear gets gradient on the first step. This is expected.
+            #
+            # Parameter names (jepa_predictor.0 / jepa_predictor.2) are
+            # unchanged, so existing checkpoints still load.
+            self.jepa_predictor = nn.Sequential(
+                nn.Linear(d_model, d_model),
+                nn.GELU(),
+                nn.Linear(d_model, d_model),
+            )
+            nn.init.zeros_(self.jepa_predictor[-1].weight)
+            nn.init.zeros_(self.jepa_predictor[-1].bias)
+
+    # def forward(self, input_seq, *args, **kwargs):
+    #     """Args:
+    #     x: rank 3 tensor with shape [batch size x features x sequence length]
+    #     """
+    #     x = input_seq.squeeze(-1)
+    #     x = rearrange(x, "b t n -> b n t")
+    #     if self.decomposition:
+    #         res_init, trend_init = self.decomp_module(x)
+    #         res = self.model_res(res_init)
+    #         trend = self.model_trend(trend_init)
+    #         x = res + trend
+    #     else:
+    #         x = self.model(x)
+    #     x = rearrange(x, "b n t -> b t n")
+    #     x = x.unsqueeze(-1)
+    #     return x
+    
+    def _check_non_decomposition(self):
+        """
+        PatchTST decomposition branch has two separate backbones / heads
+        for residual and trend. This v0 JEPA refactor only supports the
+        default non-decomposition path.
+        """
+        if self.decomposition:
+            raise NotImplementedError(
+                "PatchTST JEPA v0 does not support decomposition=True. "
+                "The residual/trend hidden representations require a manual "
+                "JEPA design instead of forced merging."
+            )
+
+    def _to_bnt(self, seq, name="seq"):
+        """
+        Convert supported sequence layouts to PatchTST internal layout.
+
+        Supported:
+            input_seq / label:
+                (B, T, N, 1)  current dataloader format
+                (B, T, N)     squeezed format
+                (B, N, T)     PatchTST / JEPA-style format
+
+        Return:
+            seq: (B, N, T)
+        """
+        if seq is None:
+            raise ValueError(f"{name} must not be None.")
+
+        if seq.dim() == 4:
+            if seq.size(-1) != 1:
+                raise ValueError(
+                    f"PatchTST expects {name} last channel dim = 1, "
+                    f"but got shape {tuple(seq.shape)}."
+                )
+            seq = seq.squeeze(-1)
+
+        if seq.dim() != 3:
+            raise ValueError(
+                f"PatchTST expects {name} as (B,T,N,1), (B,T,N), or (B,N,T), "
+                f"but got shape {tuple(seq.shape)}."
+            )
+
+        # Existing project convention: (B, T, N)
+        if seq.size(-1) == self.node_num:
+            return rearrange(seq, "b t n -> b n t")
+
+        # PatchTST / JEPA convention: (B, N, T)
+        if seq.size(1) == self.node_num:
+            return seq
+
+        raise ValueError(
+            f"Cannot infer node dimension for {name}. "
+            f"Expected one dimension to equal node_num={self.node_num}, "
+            f"but got shape {tuple(seq.shape)}."
+        )
+
+    def _encode_with_single_backbone(self, seq, model):
+        """
+        Run PatchTST backbone until hidden representation, without output head.
+
+        Args:
+            seq:
+                (B, N, T)
+            model:
+                self.model, i.e. one _PatchTST_backbone instance.
+
+        Return:
+            hidden:
+                (B, N, d_model, patch_num)
+        """
+        # Reuse original RevIN normalization.
+        if model.revin:
+            seq = model.revin_layer(seq, torch.tensor(True, dtype=torch.bool))
+
+        # Reuse original padding + unfold logic from _PatchTST_backbone.forward.
+        # seq: (B, N, T)
+        seq = model.padding_patch_layer(seq)
+        b, c, s = seq.size()
+
+        # unfold input:
+        #   seq reshape: (B*N, 1, 1, padded_T)
+        #   unfold:      (B*N, patch_len, patch_num)
+        #   patches:     (B, N, patch_len, patch_num)
+        patches = seq.reshape(-1, 1, 1, s)
+        patches = model.unfold(patches)
+        patches = patches.permute(0, 2, 1)
+        patches = patches.reshape(b, c, -1, model.patch_len)
+        patches = patches.permute(0, 1, 3, 2)
+
+        # Original PatchTST encoder:
+        # patches: (B, N, patch_len, patch_num)
+        # hidden:  (B, N, d_model, patch_num)
+        hidden = model.backbone(patches)
+        return hidden
+
+    def encode(self, seq, seq_features=None, *args, **kwargs):
+        """
+        Encode input or label into PatchTST embedding space.
+
+        input_seq:
+            (B, T, N, 1) or (B, T, N) or (B, N, T)
+
+        label / target_seq:
+            (B, L, N, 1) or (B, L, N) or (B, N, L)
+
+        Return:
+            Ex / Ey: (B, N, d_model, patch_num)
+
+        Note:
+            This v0 JEPA refactor assumes his_len == pred_len.
+            Otherwise input_seq and label may produce different patch_num.
+        """
+        self._check_non_decomposition()
+
+        seq = self._to_bnt(seq, name="seq")
+
+        if seq.size(-1) != self.his_len:
+            raise ValueError(
+                f"PatchTST encode expects temporal length == his_len={self.his_len}, "
+                f"but got {seq.size(-1)}. "
+                "This v0 JEPA refactor assumes his_len == pred_len for label encoding."
+            )
+
+        hidden = self._encode_with_single_backbone(seq, self.model)
+        return hidden
+
+    def predict(self, Ex):
+        """
+        Predict label hidden representation from input hidden representation.
+
+        Residual predictor:
+            Ey_pred = Ex + jepa_predictor(Ex)
+        The last Linear of jepa_predictor is zero-initialized, so the
+        predictor is the identity at init.
+
+        Ex:
+            (B, N, d_model, patch_num)
+
+        Ey_pred:
+            (B, N, d_model, patch_num)
+        """
+        if Ex.dim() != 4:
+            raise ValueError(
+                f"PatchTST JEPA predictor expects Ex with shape "
+                f"(B,N,d_model,patch_num), but got {tuple(Ex.shape)}."
+            )
+
+        if Ex.size(2) != self.d_model:
+            raise ValueError(
+                f"PatchTST JEPA predictor expects hidden dim d_model={self.d_model}, "
+                f"but got {Ex.size(2)}."
+            )
+
+        # nn.Linear acts on the last dimension.
+        # Ex:      (B, N, d_model, patch_num)
+        # x:       (B, N, patch_num, d_model)
+        # mapped:  (B, N, patch_num, d_model)
+        # Ey_pred: (B, N, d_model, patch_num)
+        x = Ex.permute(0, 1, 3, 2)
+        x = x + self.jepa_predictor(x)  # residual: identity at init
+        Ey_pred = x.permute(0, 1, 3, 2)
+        return Ey_pred
+
+    def decode(self, Ey_pred, input_seq=None, *args, **kwargs):
+        """
+        Decode predicted PatchTST hidden representation into value space.
+
+        Ey_pred:
+            (B, N, d_model, patch_num)
+
+        Return:
+            y_pred: (B, L, N, 1)
+        """
+        self._check_non_decomposition()
+
+        if Ey_pred.dim() != 4:
+            raise ValueError(
+                f"PatchTST decode expects Ey_pred with shape "
+                f"(B,N,d_model,patch_num), but got {tuple(Ey_pred.shape)}."
+            )
+
+        if Ey_pred.size(2) != self.d_model:
+            raise ValueError(
+                f"PatchTST decode expects hidden dim d_model={self.d_model}, "
+                f"but got {Ey_pred.size(2)}."
+            )
+
+        # Reuse original PatchTST head:
+        # Ey_pred: (B, N, d_model, patch_num)
+        # y:       (B, N, pred_len)
+        y = self.model.head(Ey_pred)
+
+        # Reuse original RevIN denormalization.
+        if self.model.revin:
+            y = self.model.revin_layer(y, torch.tensor(False, dtype=torch.bool))
+
+        # Convert to project convention:
+        # y:      (B, N, pred_len)
+        # y_pred: (B, pred_len, N, 1)
+        y_pred = rearrange(y, "b n t -> b t n")
+        y_pred = y_pred.unsqueeze(-1)
+        return y_pred
+
+    def forward(
+        self,
+        input_seq,
+        input_features=None,
+        target_features=None,
+        target_seq=None,
+        label=None,
+        mode="finetune",
+        *args,
+        **kwargs,
+    ):
+        """
+        mode == "pretrain":
+            Ex      = encode(input_seq) -> (B, N, d_model, patch_num)
+            Ey      = encode(label)     -> (B, N, d_model, patch_num)
+            Ey_pred = predict(Ex)       -> (B, N, d_model, patch_num)
+            return Ey, Ey_pred
+
+        mode == "finetune":
+            Ex      = encode(input_seq) -> (B, N, d_model, patch_num)
+            Ey_pred = predict(Ex)       -> (B, N, d_model, patch_num)
+            y_pred  = decode(Ey_pred)   -> (B, L, N, 1)
+            return y_pred
+        """
+        if label is None:
+            label = target_seq
+
+        if label is None:
+            label = kwargs.get("target_seq", None)
+
+        if mode == "pretrain":
+            if label is None:
+                raise ValueError(
+                    "PatchTST forward(mode='pretrain') requires label or target_seq."
+                )
+
+            Ex = self.encode(input_seq)
+            Ey = self.encode(label)
+            Ey_pred = self.predict(Ex)
+
+            if Ey_pred.shape != Ey.shape:
+                raise RuntimeError(
+                    f"PatchTST JEPA shape mismatch: "
+                    f"Ey_pred.shape={tuple(Ey_pred.shape)} vs Ey.shape={tuple(Ey.shape)}."
+                )
+
+            return Ey, Ey_pred
+
+        if mode == "finetune":
+            Ex = self.encode(input_seq)
+            Ey_pred = self.predict(Ex)
+            y_pred = self.decode(Ey_pred, input_seq=input_seq)
+            return y_pred
+
+        raise ValueError(f"Unsupported mode: {mode}")

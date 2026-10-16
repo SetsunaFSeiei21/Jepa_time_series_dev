@@ -1,3 +1,4 @@
+# Supervised forecasting (src/experiments/main.py).
 hydra:
   sweep:
     dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
@@ -6,10 +7,12 @@ hydra:
 defaults:
   - _self_
   - dataset: pems04
-  - model: fedformer
-  - task: long
-  - exp: full_shot
+  - model: gwnet
+  - task: short
+  - train: default
+  - time_encoding: cyclic   # shared by all models, see src/models/time_encoding.py
+  - predictor: default      # JEPA latent predictor, shared by all models
+  - optional model_task: ${model}_${task}   # e.g. configs/model_task/patchtst_long.yaml
 
-meta_path: "/public/home/202411094934/python_project/Spatio-Temporal-Library/data/STFM-datasets/"
-# meta_path: "/public/home/202411094934/python_project/Spatio-Temporal-Library/data/time-series-dataset/"
+data_root: ~/datasets   # unified-format datasets, see tools/convert_datasets.py
 seed: 2026

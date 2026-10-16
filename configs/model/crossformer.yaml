@@ -1,11 +1,11 @@
-_target_: 'src.models.time-series.crossformer.Crossformer'
-
-seg_len: 8
-win_size: 4
-factor: 10
-d_model: 64
-d_ff: 128
+_target_: src.models.timeseries.crossformer.Crossformer
+seg_len: 8           # time steps per segment; task=short overrides it (configs/model_task/crossformer_short.yaml)
+win_size: 4          # adjacent segments merged into one between consecutive encoder scales
+factor: 10           # router vectors per segment in the cross-dimension stage
+d_model: 128
+d_ff: 256            # hidden width of the TSA feed-forward blocks
 n_heads: 4
-e_layers: 3
-dropout: 0.1
-baseline: false
+e_layers: 3          # encoder blocks; the decoder has e_layers + 1 layers, one per scale
+block_depth: 1       # TSA layers per encoder block (fixed to 1 in the reference code)
+dropout: 0.1         # attention weights, residual branches and feed-forward outputs
+baseline: false      # add the mean of the input window to the forecast

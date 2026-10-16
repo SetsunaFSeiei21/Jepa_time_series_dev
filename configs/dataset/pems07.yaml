@@ -1,5 +1,4 @@
 name: PEMS07
-train_point: 0.0
-train_val_point: 0.6
-val_test_point: 0.8
-use_dataset_norm: True
+split: [0.6, 0.2, 0.2]    # train / val / test ratios of the series length
+normalize: node           # node | global | none, fitted on the train split
+metric_space: raw         # raw | normalized: space in which loss and metrics are computed

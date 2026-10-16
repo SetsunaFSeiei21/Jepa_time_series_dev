@@ -1,33 +1,12 @@
-_target_: 'src.models.time-series.patchtst.PatchTST'
-
-# PatchTST encoder
-n_layers: 2
+_target_: src.models.timeseries.patchtst.PatchTST
+d_model: 128
 n_heads: 8
-d_model: 64
-d_ff: 128
-
-# Dropout
-dropout: 0.05
-attn_dropout: 0.0
-
-# Patching
-patch_len: 24
-stride: 12
-padding_patch: true
-
-# Normalization / head
-revin: false
-affine: false
-individual: true
-subtract_last: false
-
-# Decomposition
-decomposition: false
-kernel_size: 5
-
-# Transformer details
-activation: gelu
-norm: BatchNorm
-pre_norm: false
-res_attention: true
-store_attn: false
+d_ff: 256            # hidden width of the feed-forward block
+e_layers: 2          # encoder layers
+dropout: 0.05        # residual, feed-forward and token dropout
+attn_dropout: 0.0    # dropout on the attention weights
+# One forecasting head per node instead of one shared head. Its size is
+# num_nodes * pred_len * d_model * num_patches (tens of millions of weights on large graphs).
+individual: false
+# patch_len and stride (of the patching over time) depend on the task:
+# configs/model_task/patchtst_*.yaml

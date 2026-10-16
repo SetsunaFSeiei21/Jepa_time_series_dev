@@ -1,0 +1,4 @@
+# Latent predictor of every model (src/models/layers/predictor.py): one MLP-Mixer block,
+# the identity at initialization.
+token_expansion: 2            # hidden width of the token-mixing MLP / number of tokens
+channel_expansion: 2          # hidden width of the channel MLP / latent width

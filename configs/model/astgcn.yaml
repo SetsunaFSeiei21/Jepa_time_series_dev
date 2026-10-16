@@ -1,6 +1,10 @@
-_target_: 'src.models.astgcn.ASTGCN'
-order: 3
-nb_block: 2
-nb_chev_filter: 128
-nb_time_filter: 128
-time_stride: 1
+_target_: src.models.spatiotemporal.astgcn.ASTGCN
+graph_transform:
+  _target_: src.graph.Chebyshev
+  order: 3                   # Chebyshev polynomials T_0 .. T_2 used by the graph convolution (K)
+  self_loops: false          # as in the reference code, no self-loops are added to the graph
+num_blocks: 2
+cheb_channels: 128           # output width of the Chebyshev graph convolution
+time_channels: 128           # output width of the temporal convolution (block and latent width)
+time_kernel_size: 3          # temporal convolution width (odd, padded to keep the length)
+time_stride: 1               # temporal stride of the first block

@@ -1,0 +1,10 @@
+# Masked-reconstruction (MAE) pretraining, see src/training/mae.py and docs/pretraining/mae.md.
+name: mae
+mask_ratio: 0.35          # fraction of every node's segments hidden from the encoder (rounded)
+num_segments: 12          # equal time segments per window, the masking unit: one step when
+                          # his_len = 12, spans of 8 steps when his_len = 96
+separate_decoder: true    # reconstruct with a copy of the model's decoder that is not saved;
+                          # false trains and saves the model's own decoder
+loss:                     # reconstruction loss on the hidden, observed entries
+  _target_: torch.nn.L1Loss
+eval_seed: 0              # validation masks are drawn from this seed at every evaluation

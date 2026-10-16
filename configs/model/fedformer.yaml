@@ -1,17 +1,25 @@
-_target_: 'src.models.time-series.fedformer.FEDformer'
-
-d_model: 64
-embed: timeF
-freq: h
-dropout: 0.1
-activation: relu
-e_layers: 2
-d_layers: 2
+_target_: src.models.timeseries.fedformer.FEDformer
+d_model: 128
 n_heads: 4
-d_ff: 128
-factor: 3
-moving_avg: 25
-
-version: fourier
-mode_select: random
-modes: 32
+d_ff: 256               # hidden width of the feed-forward networks
+e_layers: 2             # encoder layers
+d_layers: 2             # decoder layers
+moving_avg: 25          # kernel of the moving average separating trend and seasonal part
+label_ratio: 0.5        # the decoder re-reads the last label_ratio * his_len input steps, as in the paper
+embedding_kernel_size: 3  # circular convolution over time embedding the variates
+trend_kernel_size: 3    # circular convolution projecting each decoder layer's trend
+positional_embedding: true  # sinusoidal positions in the embeddings (TSLib; official code: false)
+dropout: 0.1
+activation: relu        # feed-forward activation: relu | gelu
+version: fourier        # frequency enhanced blocks: fourier | wavelets
+modes: 32               # Fourier modes kept per block (wavelets: per cross-attention level)
+mode_select: random     # fourier version: random | low (lowest) frequencies
+cross_activation: tanh  # on the frequency-domain cross-attention scores: tanh | softmax
+# wavelets version only
+wavelet_order: 8        # polynomial order k of the Legendre multiwavelet basis
+wavelet_modes: 16       # Fourier modes of the self-attention wavelet kernels
+wavelet_channels: 128   # wavelet channels per order in self-attention
+wavelet_cross_channels: 64  # wavelet channels per order in cross-attention
+wavelet_blocks: 1       # stacked wavelet kernels in self-attention
+wavelet_skip_levels: 1  # coarsest decomposition levels left out in self-attention
+wavelet_cross_skip_levels: 0  # coarsest decomposition levels left out in cross-attention

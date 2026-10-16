@@ -1,10 +1,14 @@
-_target_: 'src.models.staeformer.STAEformer'
-input_embedding_dim: 32
-temporal_embedding_dim: 32
-spatial_embedding_dim: 32
-adaptive_embedding_dim: 32
-feed_forward_dim: 128
-num_heads: 4
-num_layers: 2
-use_mixed_proj: true
-dropout: 0.3
+_target_: src.models.spatiotemporal.staeformer.STAEformer
+# Token = concat of the embeddings below; a width of 0 disables that embedding (time
+# embeddings are also dropped when the dataset lacks the feature). The widths sum to a token
+# width of 128 when the dataset has both time features.
+input_embedding_dim: 32      # linear projection of the data channels
+tod_embedding_dim: 16        # learned table indexed by time of day (paper: 24)
+dow_embedding_dim: 16        # learned table indexed by day of week (paper: 24)
+spatial_embedding_dim: 32    # learned per-node embedding (paper: 0)
+adaptive_embedding_dim: 32   # learned per-(window step, node) embedding (paper: 80)
+feed_forward_dim: 256        # paper: 256
+num_heads: 4                 # must divide the token width (sum of the embedding widths)
+num_layers: 2                # Transformer layers along time, then as many along nodes (paper: 3)
+use_mixed_proj: true         # one linear map from the flattened (time, feature) history to the horizon
+dropout: 0.3                 # paper: 0.1; switched off in the online encoder during JEPA pretraining
