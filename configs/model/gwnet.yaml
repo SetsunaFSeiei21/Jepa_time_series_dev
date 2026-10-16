@@ -1,9 +1,17 @@
-_target_: 'src.models.gwnet.GWNET'
-init_dim: 128
-skip_channels: 256
-end_channels: 512
-dropout: 0.1
-kernel_size: 2
+_target_: src.models.spatiotemporal.gwnet.GWNET
+graph_transform:
+  _target_: src.graph.DoubleTransition   # forward and backward random walks, as in the paper
+  self_loops: false          # as in the reference code, no self-loops are added to the graph
+residual_channels: 128       # width of the residual stream between layers
+dilation_channels: 128       # width of the gated temporal convolution output
+skip_channels: 128           # width of the skip outputs, i.e. of the latent
+end_channels: 512            # hidden width of the output head
+kernel_size: 2               # temporal convolution width
 blocks: 4
-layers: 2
-adp_adj: true
+layers_per_block: 2          # dilation doubles within a block: 1, 2, 4, ...
+diffusion_steps: 2           # powers of each support used by the graph convolution
+dropout: 0.1                 # after each graph convolution
+adaptive_adj: true           # add a learned adjacency softmax(relu(E1 E2))
+adaptive_embedding_dim: 10   # width of E1 / E2
+time_mlp_hidden: [64, 128, 64]   # MLP over the steps left when his_len > receptive field
+gradient_checkpointing: false    # recompute each layer in backward to save memory (same results)

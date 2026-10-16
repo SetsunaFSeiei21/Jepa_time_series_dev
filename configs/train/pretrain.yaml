@@ -1,0 +1,8 @@
+# Optimization of self-supervised pretraining; the method itself is the `pretrain` group.
+defaults:
+  - default
+  - _self_
+max_epochs: 10
+save_every: 2                 # also keep pretrained_epoch_<e>.pt every this many epochs
+optimizer:
+  lr: 1.0e-4

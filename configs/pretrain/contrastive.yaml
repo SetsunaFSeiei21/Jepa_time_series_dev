@@ -1,0 +1,9 @@
+# Contrastive pretraining (frequency masking + InfoNCE), see src/training/contrastive.py and
+# docs/pretraining/contrastive.md.
+name: contrastive
+freq_mask_ratio: 0.2      # probability of removing each frequency of each series in a view
+preserve_dc: true         # never remove the zero frequency (the window mean)
+temperature: 0.2          # InfoNCE temperature on cosine similarities
+instances: token          # token: every latent token is an instance | window: tokens averaged
+max_instances: 4096       # token instances drawn per batch (bounds the similarity matrix)
+eval_seed: 0              # validation views are drawn from this seed at every evaluation

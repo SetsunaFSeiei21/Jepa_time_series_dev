@@ -1,0 +1,14 @@
+# JEPA pretraining, see src/training/jepa.py.
+name: jepa
+sigreg_weight: 10.0           # weight of SIGReg relative to the alignment loss (same for all models)
+sigreg:
+  num_slices: 128             # random directions the embeddings are projected on
+  t_max: 3.0                  # Epps-Pulley integration range [-t_max, t_max]
+  num_points: 75              # integration points on [0, t_max] (odd)
+ema:                          # momentum of the target encoder, cosine schedule over all updates
+  start: 0.999
+  end: 1.0
+disable_online_dropout: true  # the target encoder has no dropout; match it in the online model
+centering:                    # compare tokens minus their running mean over windows (see JEPATrainer.center)
+  enabled: false              # switched on per model in configs/pretrain_model/jepa_<model>.yaml
+  momentum: 0.99              # of the running mean, per training batch

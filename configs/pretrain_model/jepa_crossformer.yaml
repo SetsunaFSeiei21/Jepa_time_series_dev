@@ -1,0 +1,6 @@
+# @package pretrain
+# JEPA settings specific to Crossformer. Its learned positional embedding (one vector per node
+# and segment) makes up most of every token's variance and is the same for all windows, so
+# matching it would lower the alignment loss without encoding the window; centering removes it.
+centering:
+  enabled: true

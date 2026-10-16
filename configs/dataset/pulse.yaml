@@ -1,7 +1,4 @@
 name: Pulse
-format: presplit
-data_root: /public/home/202411094934/python_project/Spatio-Temporal-Library/data/time-series-dataset
-
-use_dataset_norm: false
-timestamp_dim: 4
-has_graph: false
+split: [0.7, 0.1, 0.2]    # train / val / test ratios of the series length
+normalize: global         # node | global | none, fitted on the train split
+metric_space: raw         # raw | normalized: space in which loss and metrics are computed

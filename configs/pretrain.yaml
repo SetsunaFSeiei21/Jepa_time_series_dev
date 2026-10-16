@@ -1,0 +1,9 @@
+# Self-supervised pretraining (src/experiments/pretrain.py): the supervised config with the
+# pretraining schedule and a pretraining method. (Hydra requires overrides after the other
+# defaults entries.)
+defaults:
+  - default
+  - pretrain: jepa
+  - optional pretrain_model: ${pretrain}_${model}   # e.g. configs/pretrain_model/jepa_crossformer.yaml
+  - _self_
+  - override train: pretrain

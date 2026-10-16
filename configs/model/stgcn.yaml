@@ -1,5 +1,10 @@
-_target_: 'src.models.stgcn.STGCN'
-Kt: 3
-Ks: 3
-block_num: 2
-dropout: 0.1
+_target_: src.models.spatiotemporal.stgcn.STGCN
+graph_transform:
+  _target_: src.graph.ScaledLaplacian
+  self_loops: false            # paper and reference code: Laplacian of the graph without self-loops
+temporal_kernel_size: 3        # Kt, steps covered by each (unpadded) temporal convolution
+chebyshev_order: 3             # Ks, Chebyshev terms T_0 .. T_{Ks-1} of the graph convolution
+num_blocks: 2                  # ST-Conv blocks
+block_channels: [128, 32, 128] # per block: temporal conv, graph conv, temporal conv widths
+head_channels: [128, 128]      # output block: temporal conv width, hidden MLP width
+dropout: 0.1                   # at the end of every ST-Conv block

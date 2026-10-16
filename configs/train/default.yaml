@@ -1,0 +1,23 @@
+device: cuda:0                # cpu to train without a GPU; a missing GPU is an error
+data_device: ${.device}       # where the whole series is stored; cpu for datasets larger than GPU memory
+batch_size: 8                 # windows per forward pass (micro-batch)
+accumulation_steps: 1         # micro-batches per optimizer step; effective batch = batch_size x this
+eval_batch_size: ${.batch_size}
+train_stride: 1               # step between consecutive training windows
+max_epochs: 50
+monitor: MAE                  # validation metric used to select the best epoch
+instance_norm: true           # z-score every input window over time before the model (std floored at 1)
+clip_grad_norm: 5             # 0 disables clipping
+init_checkpoint: null         # state dict to start from, e.g. <pretrain run>/pretrained_model.pt
+loss:
+  _target_: torch.nn.L1Loss
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+scheduler:
+  _target_: torch.optim.lr_scheduler.MultiStepLR
+  _partial_: true
+  milestones: [10, 20, 30, 40]
+  gamma: 0.5

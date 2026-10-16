@@ -1,12 +1,7 @@
-_target_: 'src.models.time-series.itransformer.iTransformer'
-
-d_model: 64
-embed: fixed
-freq: h
-moving_avg: 25
-dropout: 0.1
-activation: relu
-e_layers: 4
+_target_: src.models.timeseries.itransformer.iTransformer
+d_model: 128            # width of the variate tokens
 n_heads: 4
-d_ff: 128
-factor: 3
+d_ff: 256               # hidden width of the feed-forward networks
+e_layers: 4             # encoder layers
+dropout: 0.1
+activation: relu        # feed-forward activation: relu | gelu

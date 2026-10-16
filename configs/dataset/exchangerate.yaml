@@ -1,0 +1,4 @@
+name: ExchangeRate
+split: [0.7, 0.1, 0.2]    # train / val / test ratios of the series length
+normalize: node           # node | global | none, fitted on the train split
+metric_space: normalized  # raw | normalized: space in which loss and metrics are computed

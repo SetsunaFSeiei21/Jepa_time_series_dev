@@ -1,48 +1,28 @@
-data/
-raw_data/
-
+# Data (anchored to the root: src/data/ is code)
+/data/
+/raw_data/
 *.csv
 *.txt
 *.npy
 *.npz
 *.tar*
 *.zip
-*.pth
+
+# Checkpoints and run outputs
 *.pt
-*.zip
+*.pth
+*.out
+runs/
+outputs/
+multirun/
+hpc_logs/
+
+# Personal scratch files
 gpt_prompt.md
 test.py
 
-__pycache__/       
-
-outputs/
-multirun/
+# Tooling
+__pycache__/
+.pytest_cache/
+.ruff_cache/
 .vscode/
-full-shot/
-few-shot/
-zero-shot/
-full-shot-baseline/
-few-shot-baseline/
-lejepa/
-*.out
-hpc_logs/
-stgcn-jepa-repeat/
-analysis_results/
-debug_smoke/
-jepa-repeat/
-test-smoke/
-debug-mae/
-jepa-debug/
-debug/
-data-result/
-test-smoke/
-time-series-result/
-mae-time-series/
-data_result/
-data-result/
-debug-mae-ft/
-contrastive-time-series/
-time-series-spectral/
-time-series-spectral-smoke/
-time-series-reference-spectral/
-contrastive-deal/

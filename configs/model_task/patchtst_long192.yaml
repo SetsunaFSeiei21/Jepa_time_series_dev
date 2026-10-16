@@ -1,0 +1,4 @@
+# @package model
+# patchtst hyperparameters that depend on the input/forecast length (task=long192).
+patch_len: 24   # time steps per patch
+stride: 12   # step between patches; also the length of the replication padding at the end

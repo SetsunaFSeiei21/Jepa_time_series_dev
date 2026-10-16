@@ -1,13 +1,13 @@
-_target_: 'src.models.time-series.autoformer.Autoformer'
-
-d_model: 64
-embed: timeF
-freq: h
-dropout: 0.1
-activation: relu
-e_layers: 2
-d_layers: 2
+_target_: src.models.timeseries.autoformer.Autoformer
+d_model: 128
 n_heads: 4
-d_ff: 128
-factor: 3
-moving_avg: 25
+d_ff: 256               # hidden width of the feed-forward networks
+e_layers: 2             # encoder layers
+d_layers: 2             # decoder layers
+factor: 3               # auto-correlation keeps the factor * ln(length) strongest delays
+moving_avg: 25          # kernel of the moving average separating trend and seasonal part
+label_ratio: 0.5        # the decoder re-reads the last label_ratio * his_len input steps, as in the paper
+embedding_kernel_size: 3  # circular convolution over time embedding the variates
+trend_kernel_size: 3    # circular convolution projecting each decoder layer's trend
+dropout: 0.1
+activation: relu        # feed-forward activation: relu | gelu
